@@ -83,7 +83,7 @@
                                             <DataTrigger
                                                 Binding="{Binding OracleCatalog.UpdateTime}"
                                                 Value="{x:Null}">
-                                                <Setter Property="Foreground" Value="{StaticResource AccentBaseColorBrush}" />
+                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
                                                 <Setter Property="Text" Value="Never" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -222,7 +222,7 @@
                                             <DataTrigger
                                                 Binding="{Binding IsPriceTooHigh}"
                                                 Value="true">
-                                                <Setter Property="Foreground" Value="{StaticResource AccentBaseColorBrush}" />
+                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -275,7 +275,7 @@
                                                                         <DataTrigger
                                                                             Binding="{Binding IsLegal}"
                                                                             Value="false">
-                                                                            <Setter Property="Foreground" Value="{StaticResource AccentBaseColorBrush}" />
+                                                                            <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
@@ -303,7 +303,7 @@
                                             <DataTrigger
                                                 Binding="{Binding IsFormatLegal}"
                                                 Value="false">
-                                                <Setter Property="Foreground" Value="{StaticResource AccentBaseColorBrush}" />
+                                                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.AccentBase}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -645,7 +645,7 @@
                     x:Name="BusyText"
                     FontFamily="{StaticResource Beleren}"
                     FontSize="32"
-                    Foreground="{StaticResource AccentColorBrush}"
+                    Foreground="{StaticResource MahApps.Brushes.Accent}"
                     Text="{Binding LastStatus.Message}" />
                 <ProgressBar
                     Width="500"

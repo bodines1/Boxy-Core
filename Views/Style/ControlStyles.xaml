@@ -66,10 +66,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{StaticResource AccentColorBrush3}" />
+                            <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent3}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Background" Value="{StaticResource AccentColorBrush}" />
+                            <Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="border" Property="Background" Value="Transparent" />
@@ -114,10 +114,10 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="{StaticResource AccentColor3}" />
+                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent3}" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Foreground" Value="{StaticResource AccentColor}" />
+                <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.Accent}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Foreground" Value="{x:Static SystemColors.InactiveSelectionHighlightBrush}" />

@@ -12,13 +12,9 @@
                 <!--  MahApps.Metro resource dictionaries. Make sure that all file names are Case Sensitive!  -->
                 <ResourceDictionary
                     Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
-                <ResourceDictionary
-                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
                 <!--  Accent and AppTheme setting  -->
                 <ResourceDictionary
-                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/orange.xaml" />
-                <ResourceDictionary
-                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/basedark.xaml" />
+                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/dark.orange.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

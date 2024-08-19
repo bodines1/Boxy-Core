@@ -80,7 +80,7 @@
                     <TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Foreground="{StaticResource AccentColorBrush}"
+                        Foreground="{StaticResource MahApps.Brushes.Accent}"
                         Text="Getting Image Options...">
                         <TextBlock.Effect>
                             <BlurEffect
@@ -90,7 +90,7 @@
                     <TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Foreground="{StaticResource AccentColorBrush}"
+                        Foreground="{StaticResource MahApps.Brushes.Accent}"
                         Text="Getting Image Options..." />
                 </Grid>
             </Grid>
@@ -232,7 +232,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="18"
-                        Foreground="{StaticResource AccentColorBrush}"
+                        Foreground="{StaticResource MahApps.Brushes.Accent}"
                         Text="Loading...">
                         <TextBlock.Effect>
                             <BlurEffect
@@ -243,7 +243,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         FontSize="18"
-                        Foreground="{StaticResource AccentColorBrush}"
+                        Foreground="{StaticResource MahApps.Brushes.Accent}"
                         Text="Loading..." />
                 </Grid>
             </Grid>

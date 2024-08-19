@@ -1,10 +1,10 @@
 ﻿<ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:viewModels="clr-namespace:Boxy_Core.ViewModels">
-    
-    <!--  map view models to views here like below. The main view/viewmodel gets mapped using the ViewModelLocator and doesn't need to be here.  -->
+    xmlns:viewModels="clr-namespace:Boxy_Core.ViewModels"
+    xmlns:views="clr-namespace:Boxy_Core.Views">
 
+    <!--  map view models to views here like below. The main view/viewmodel gets mapped using the ViewModelLocator and doesn't need to be here.  -->
     <DataTemplate
         DataType="{x:Type viewModels:CardViewModel}">
         <views:CardView />
