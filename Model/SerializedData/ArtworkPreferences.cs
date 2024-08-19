@@ -71,8 +71,13 @@ namespace Boxy_Core.Model.SerializedData
         /// Updates the preference dictionary with the passed in card being the user's "preferred" version for that Oracle ID.
         /// </summary>
         /// <param name="card">The card to set as preferred.</param>
-        public void UpdatePreferredCard(Card card)
+        public void UpdatePreferredCard(Card? card)
         {
+            if (card == null)
+            {
+                return;
+            }
+
             if (ContainsKey(card.OracleId))
             {
                 Remove(card.OracleId);
@@ -94,11 +99,9 @@ namespace Boxy_Core.Model.SerializedData
 
             try
             {
-                using (var fileStream = new FileStream(SavePath, FileMode.Create))
-                {
-                    fileStream.Write(data, 0, data.Length);
-                    fileStream.Flush();
-                }
+                using var fileStream = new FileStream(SavePath, FileMode.Create);
+                fileStream.Write(data, 0, data.Length);
+                fileStream.Flush();
             }
             catch (Exception)
             {

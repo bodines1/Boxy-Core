@@ -2,6 +2,7 @@
 using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Model.SerializedData;
 using Boxy_Core.Mvvm;
+using Boxy_Core.Properties;
 using Boxy_Core.Reporting;
 using Boxy_Core.Utilities;
 using PdfSharp.Drawing;
@@ -31,7 +32,8 @@ namespace Boxy_Core.ViewModels
             else
             {
                 PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.Default.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.Default.SavedFormat));
-                IsLegal = specificFormatPropInfo.GetValue(card.Legalities).ToString() == "legal";
+                string legalityString = specificFormatPropInfo.GetValue(card.Legalities)?.ToString() ?? throw new ArgumentOutOfRangeException(nameof(Settings.Default.SavedFormat));
+                IsLegal = legalityString == "legal";
             }
 
             UpdateImageTimer = new System.Timers.Timer(100) { AutoReset = false };
@@ -50,11 +52,11 @@ namespace Boxy_Core.ViewModels
         private const double DefaultImageWidth = 240;
         private const double DefaultImageHeight = 340;
         private ObservableCollection<Card>? _allPrintings;
-        private Card _selectedPrinting;
+        private Card? _selectedPrinting;
         private int _selectedPrintingIndex;
         private int _quantity;
-        private BitmapSource _frontImage;
-        private BitmapSource _backImage;
+        private BitmapSource? _frontImage;
+        private BitmapSource? _backImage;
         private double _imageWidth;
         private double _imageHeight;
         private bool _isPopulatingPrints;
@@ -71,7 +73,7 @@ namespace Boxy_Core.ViewModels
 
         private ArtworkPreferences ArtPreferences { get; }
 
-        private Timer UpdateImageTimer { get; }
+        private System.Timers.Timer UpdateImageTimer { get; }
 
         /// <summary>
         /// All printings of the card.
@@ -87,7 +89,7 @@ namespace Boxy_Core.ViewModels
         /// <summary>
         /// The printing of the card selected by the user, should result in an image specific to that printing being displayed.
         /// </summary>
-        public Card SelectedPrinting
+        public Card? SelectedPrinting
         {
             get
             {
@@ -314,7 +316,7 @@ namespace Boxy_Core.ViewModels
 
         #region Methods
 
-        private async void UpdateImageTimerOnElapsed(object sender, ElapsedEventArgs e)
+        private async void UpdateImageTimerOnElapsed(object? sender, ElapsedEventArgs e)
         {
             UpdateImageTimer.Stop();
             await DispatcherHelper.UiDispatcher.InvokeAsync(UpdateCardImage);

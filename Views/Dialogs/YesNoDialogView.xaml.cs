@@ -1,28 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using Boxy_Core.DialogService;
+using Boxy_Core.Mvvm;
+using System.ComponentModel;
 
 namespace Boxy_Core.Views.Dialogs
 {
     /// <summary>
     /// Interaction logic for YesNoDialogView.xaml
     /// </summary>
-    public partial class YesNoDialogView : UserControl
+    public partial class YesNoDialogView : IDialog
     {
         public YesNoDialogView()
         {
             InitializeComponent();
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            (DataContext as ViewModelBase)?.Cleanup();
+            base.OnClosing(e);
         }
     }
 }
