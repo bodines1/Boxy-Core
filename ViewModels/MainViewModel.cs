@@ -1,17 +1,19 @@
 ﻿using Boxy_Core.DialogService;
+using Boxy_Core.Model;
+using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
+using Boxy_Core.Properties;
 using Boxy_Core.Reporting;
+using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
+using Boxy_Core.ViewModels.Dialogs;
 using PdfSharp.Pdf;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
+using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Boxy_Core.ViewModels
 {
@@ -33,6 +35,12 @@ namespace Boxy_Core.ViewModels
             OracleCatalog = cardCatalog;
             ArtPreferences = artworkPreferences;
             ZoomPercent = Settings.Default.ZoomPercent;
+            DecklistText = string.Empty;
+            
+            DisplayedCards = new ObservableCollection<CardViewModel>();
+            DisplayedCards.CollectionChanged += OnDisplayedCardsOnCollectionChanged;
+            DisplayErrors = new ObservableCollection<string>();
+            SavedPdfFilePaths = new ObservableCollection<string>();
 
             if (ApplicationDeployment.IsNetworkDeployed)
             {
@@ -44,27 +52,22 @@ namespace Boxy_Core.ViewModels
                 SoftwareVersion = "Debug";
             }
 
-            Reporter.StatusReported += (sender, args) => LastStatus = args;
-            Reporter.ProgressReported += (sender, args) => LastProgress = args;
+            Reporter.StatusReported += (_, args) => LastStatus = args;
+            Reporter.ProgressReported += (_, args) => LastProgress = args;
         }
 
         #endregion Constructors
 
         #region Fields
 
-        private string _importDeckUri;
         private string _decklistText;
-        private string _softwareVersion;
         private CardMimicStatusEventArgs _lastStatus;
         private CardMimicProgressEventArgs _lastProgress;
         private CardCatalog _oracleCatalog;
         private int _zoomPercent;
-        private ObservableCollection<CardViewModel> _displayedCards;
         private int _totalCards;
         private double _totalPrice;
         private bool _isFormatLegal;
-        private ObservableCollection<string> _errorsWhileBuildingCards;
-        private ObservableCollection<string> _savedPdfFilePaths;
 
         #endregion Fields
 
@@ -81,6 +84,31 @@ namespace Boxy_Core.ViewModels
         private ArtworkPreferences ArtPreferences { get; }
 
         /// <summary>
+        /// Reports status and progress events to subscribers.
+        /// </summary>
+        public IReporter Reporter { get; }
+
+        /// <summary>
+        /// The version of the software currently running.
+        /// </summary>
+        public string SoftwareVersion { get; }
+
+        /// <summary>
+        /// A collection of card view models to display, and later to build the PDF.
+        /// </summary>
+        public ObservableCollection<CardViewModel> DisplayedCards { get; }
+
+        /// <summary>
+        /// Error messages generated during the card building process, stored to display to user.
+        /// </summary>
+        public ObservableCollection<string> DisplayErrors { get; }
+
+        /// <summary>
+        /// A collection of all PDF files user has created since the app started.
+        /// </summary>
+        public ObservableCollection<string> SavedPdfFilePaths { get; }
+
+        /// <summary>
         /// Card catalog contains all possible oracle cards locally to avoid querying Scryfall.
         /// </summary>
         public CardCatalog OracleCatalog
@@ -90,65 +118,9 @@ namespace Boxy_Core.ViewModels
                 return _oracleCatalog;
             }
 
-            set
+            private set
             {
                 _oracleCatalog = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Reports status and progress events to subscribers.
-        /// </summary>
-        public IReporter Reporter { get; }
-
-        /// <summary>
-        /// User entered URI to use for importing a deck. Can be a web url from supported websites, or a local file path.
-        /// </summary>
-        public string ImportDeckUri
-        {
-            get
-            {
-                return _importDeckUri;
-            }
-
-            set
-            {
-                _importDeckUri = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Text in the decklist text box.
-        /// </summary>
-        public string DecklistText
-        {
-            get
-            {
-                return _decklistText ?? (_decklistText = string.Empty);
-            }
-
-            set
-            {
-                _decklistText = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// The version of the software currently running.
-        /// </summary>
-        public string SoftwareVersion
-        {
-            get
-            {
-                return _softwareVersion;
-            }
-
-            set
-            {
-                _softwareVersion = value;
                 OnPropertyChanged();
             }
         }
@@ -188,6 +160,23 @@ namespace Boxy_Core.ViewModels
         }
 
         /// <summary>
+        /// Text in the decklist text box.
+        /// </summary>
+        public string DecklistText
+        {
+            get
+            {
+                return _decklistText;
+            }
+
+            set
+            {
+                _decklistText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
         /// How big, as a percent, to make the card images compared to their default size.
         /// </summary>
         public int ZoomPercent
@@ -213,77 +202,6 @@ namespace Boxy_Core.ViewModels
         }
 
         /// <summary>
-        /// A collection of card view models to display, and later to build the PDF.
-        /// </summary>
-        public ObservableCollection<CardViewModel> DisplayedCards
-        {
-            get
-            {
-                if (_displayedCards != null)
-                {
-                    return _displayedCards;
-                }
-
-                _displayedCards = new ObservableCollection<CardViewModel>();
-                _displayedCards.CollectionChanged += OnDisplayedCardsOnCollectionChanged;
-                return _displayedCards;
-            }
-        }
-
-        private void OnDisplayedCardsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
-        {
-            if (args.NewItems != null && args.NewItems.Count > 0)
-            {
-                foreach (object item in args.NewItems)
-                {
-                    if (!(item is CardViewModel cvm))
-                    {
-                        continue;
-                    }
-
-                    cvm.PropertyChanged += PriceWatcher;
-                }
-            }
-
-            if (args.OldItems != null && args.OldItems.Count > 0)
-            {
-                foreach (object item in args.OldItems)
-                {
-                    if (!(item is CardViewModel cvm))
-                    {
-                        continue;
-                    }
-
-                    cvm.PropertyChanged -= PriceWatcher;
-                }
-            }
-
-            if (!DisplayedCards.Any())
-            {
-                TotalCards = 0;
-                TotalPrice = 0;
-                IsFormatLegal = true;
-                return;
-            }
-
-            TotalCards = DisplayedCards.Select(cvm => cvm.Quantity).Sum();
-            IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
-        }
-
-        private void PriceWatcher(object sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case nameof(CardViewModel.LowestPrice):
-                    TotalPrice = DisplayedCards.Select(cvm => cvm.TotalPrice).Sum();
-                    break;
-                case nameof(CardViewModel.IsLegal):
-                    IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
-                    break;
-            }
-        }
-
-        /// <summary>
         /// Total price of all the cards generated to be displayed in <see cref="DisplayedCards"/>.
         /// </summary>
         public double TotalPrice
@@ -293,7 +211,7 @@ namespace Boxy_Core.ViewModels
                 return _totalPrice;
             }
 
-            set
+            private set
             {
                 _totalPrice = value;
                 OnPropertyChanged();
@@ -311,7 +229,7 @@ namespace Boxy_Core.ViewModels
                 return _totalCards;
             }
 
-            set
+            private set
             {
                 _totalCards = value;
                 OnPropertyChanged();
@@ -358,79 +276,13 @@ namespace Boxy_Core.ViewModels
             }
         }
 
-        /// <summary>
-        /// Error messages generated during the card building process, stored to display to user.
-        /// </summary>
-        public ObservableCollection<string> DisplayErrors
-        {
-            get
-            {
-                return _errorsWhileBuildingCards ?? (_errorsWhileBuildingCards = new ObservableCollection<string>());
-            }
-        }
-
-        /// <summary>
-        /// A collection of all PDF files user has created since the app started.
-        /// </summary>
-        public ObservableCollection<string> SavedPdfFilePaths
-        {
-            get
-            {
-                return _savedPdfFilePaths ?? (_savedPdfFilePaths = new ObservableCollection<string>());
-            }
-        }
-
         #endregion Properties
 
         #region Commands
 
-        #region ImportDeck
-
-        private AsyncCommand _importDeck;
-
-        /// <summary>
-        /// Command which imports a deck from a remote source (web url, .dec file, etc).
-        /// </summary>
-        public AsyncCommand ImportDeck
-        {
-            get
-            {
-                return _importDeck ?? (_importDeck = new AsyncCommand(ImportDeck_ExecuteAsync));
-            }
-        }
-
-        private async Task ImportDeck_ExecuteAsync()
-        {
-            if (string.IsNullOrWhiteSpace(ImportDeckUri))
-            {
-                return;
-            }
-
-            DisplayErrors.Clear();
-            Reporter.StartBusy(LovecraftianPhraseGenerator.RandomPhrase());
-            Reporter.StatusReported += BuildingCardsErrors;
-            var imported = string.Empty;
-
-            try
-            {
-                imported = await DeckImport.ImportFromUrl(ImportDeckUri, Reporter);
-            }
-            catch (Exception exc)
-            {
-                DisplayError(exc, $"Could not import deck from {ImportDeckUri}\r\n");
-            }
-
-            DecklistText += "\r\n" + imported;
-
-            Reporter.StatusReported -= BuildingCardsErrors;
-            Reporter.StopBusy();
-        }
-
-        #endregion ImportDeck
-
         #region SearchSubmit
 
-        private AsyncCommand _searchSubmit;
+        private AsyncCommand? _searchSubmit;
 
         /// <summary>
         /// Command which builds the list of displayed cards from the user's entered data.
@@ -439,7 +291,7 @@ namespace Boxy_Core.ViewModels
         {
             get
             {
-                return _searchSubmit ?? (_searchSubmit = new AsyncCommand(SearchSubmit_ExecuteAsync));
+                return _searchSubmit ??= new AsyncCommand(SearchSubmit_ExecuteAsync);
             }
         }
 
@@ -477,7 +329,7 @@ namespace Boxy_Core.ViewModels
             Reporter.StatusReported += BuildingCardsErrors;
 
             List<SearchLine> lines = DecklistText
-                .Split(new[] { "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .Split(["\r", "\n"], StringSplitOptions.RemoveEmptyEntries)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(l => new SearchLine(l))
                 .ToList();
@@ -491,7 +343,7 @@ namespace Boxy_Core.ViewModels
                     cards.Add(await ScryfallService.GetFuzzyCardAsync(lines[i].SearchTerm, Reporter));
                 }
 
-                if (!cards.Any() || cards.Any(c => c == null))
+                if (!cards.Any())
                 {
                     Reporter.Report($"[{lines[i].SearchTerm}] returned no results", true);
                     continue;
@@ -531,13 +383,13 @@ namespace Boxy_Core.ViewModels
 
         #region BuildPdf
 
-        private AsyncCommand _buildPdf;
+        private AsyncCommand? _buildPdf;
 
         public AsyncCommand BuildPdf
         {
             get
             {
-                return _buildPdf ?? (_buildPdf = new AsyncCommand(BuildPdf_ExecuteAsync));
+                return _buildPdf ??= new AsyncCommand(BuildPdf_ExecuteAsync);
             }
         }
 
@@ -622,7 +474,7 @@ namespace Boxy_Core.ViewModels
 
         #region UpdateCatalog
 
-        private AsyncCommand _updateCatalog;
+        private AsyncCommand? _updateCatalog;
 
         /// <summary>
         /// Command which updates the locally stored card catalog from Scryfall.
@@ -631,7 +483,7 @@ namespace Boxy_Core.ViewModels
         {
             get
             {
-                return _updateCatalog ?? (_updateCatalog = new AsyncCommand(UpdateCatalog_ExecuteAsync));
+                return _updateCatalog ??= new AsyncCommand(UpdateCatalog_ExecuteAsync);
             }
         }
 
@@ -672,7 +524,7 @@ namespace Boxy_Core.ViewModels
         
         #region OpenSettings
 
-        private RelayCommand _openSettings;
+        private RelayCommand? _openSettings;
 
         /// <summary>
         /// Command which opens a dialog for the user to view app settings and change/save them.
@@ -681,7 +533,7 @@ namespace Boxy_Core.ViewModels
         {
             get
             {
-                return _openSettings ?? (_openSettings = new RelayCommand(OpenSettings_ExecuteAsync));
+                return _openSettings ??= new RelayCommand(OpenSettings_ExecuteAsync);
             }
         }
 
@@ -713,19 +565,19 @@ namespace Boxy_Core.ViewModels
 
         #region OpenSinglePdf
 
-        private RelayCommand _openSinglePdf;
+        private RelayCommand? _openSinglePdf;
 
         public RelayCommand OpenSinglePdf
         {
             get
             {
-                return _openSinglePdf ?? (_openSinglePdf = new RelayCommand(OpenSinglePdf_ExecuteAsync));
+                return _openSinglePdf ??= new RelayCommand(OpenSinglePdf_ExecuteAsync);
             }
         }
 
-        private void OpenSinglePdf_ExecuteAsync(object parameter)
+        private void OpenSinglePdf_ExecuteAsync(object? parameter)
         {
-            if (!(parameter is string paramAsString))
+            if (parameter is not string paramAsString)
             {
                 return;
             }
@@ -747,7 +599,60 @@ namespace Boxy_Core.ViewModels
 
         #region Methods
 
-        private void BuildingCardsErrors(object sender, CardMimicStatusEventArgs e)
+        private void OnDisplayedCardsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+        {
+            if (args.NewItems != null && args.NewItems.Count > 0)
+            {
+                foreach (object item in args.NewItems)
+                {
+                    if (item is not CardViewModel cvm)
+                    {
+                        continue;
+                    }
+
+                    cvm.PropertyChanged += PriceWatcher;
+                }
+            }
+
+            if (args.OldItems != null && args.OldItems.Count > 0)
+            {
+                foreach (object item in args.OldItems)
+                {
+                    if (item is not CardViewModel cvm)
+                    {
+                        continue;
+                    }
+
+                    cvm.PropertyChanged -= PriceWatcher;
+                }
+            }
+
+            if (!DisplayedCards.Any())
+            {
+                TotalCards = 0;
+                TotalPrice = 0;
+                IsFormatLegal = true;
+                return;
+            }
+
+            TotalCards = DisplayedCards.Select(cvm => cvm.Quantity).Sum();
+            IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
+        }
+
+        private void PriceWatcher(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(CardViewModel.LowestPrice):
+                    TotalPrice = DisplayedCards.Select(cvm => cvm.TotalPrice).Sum();
+                    break;
+                case nameof(CardViewModel.IsLegal):
+                    IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
+                    break;
+            }
+        }
+
+        private void BuildingCardsErrors(object? sender, CardMimicStatusEventArgs e)
         {
             if (!e.IsError)
             {
@@ -757,7 +662,7 @@ namespace Boxy_Core.ViewModels
             DisplayErrors.Add(e.Message);
         }
 
-        private void DisplayError(Exception exc, string additionalInfo)
+        private void DisplayError(Exception? exc, string additionalInfo)
         {
             var message = new StringBuilder($"{additionalInfo}\r\n\r\n");
 

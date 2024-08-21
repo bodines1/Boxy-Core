@@ -1,18 +1,15 @@
 ﻿using Boxy_Core.Model.ScryfallData;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
-namespace Boxy_Core.Model.SerializedData
+namespace Boxy_Core.Settings
 {
     /// <summary>
     /// Holds a queryable set of all oracle cards (no duplicate printings) to prevent excess queries to ScryfallAPI.
     /// </summary>
+    [Serializable]
     public class CardCatalog
     {
         #region Constructors
@@ -23,9 +20,9 @@ namespace Boxy_Core.Model.SerializedData
         /// </summary>
         public CardCatalog(BulkData scryfallMetadata, List<Card> cards, DateTime? updateTime)
         {
-            ScryfallMetadata = scryfallMetadata;
-            _cards = cards;
+            Cards = cards;
             UpdateTime = updateTime;
+            ScryfallMetadata = scryfallMetadata;
         }
 
         /// <summary>
@@ -37,21 +34,15 @@ namespace Boxy_Core.Model.SerializedData
             try
             {
                 var deserializedFromFile = JsonSerializer.Deserialize<CardCatalog>(File.ReadAllText(SavePath));
-                return deserializedFromFile ?? new CardCatalog(new BulkData(), new List<Card>(), null);
+                return deserializedFromFile ?? new CardCatalog(new BulkData(), [], null);
             }
             catch (Exception)
             {
-                return new CardCatalog(new BulkData(), new List<Card>(), null);
+                return new CardCatalog(new BulkData(), [], null);
             }
         }
 
         #endregion Constructors
-
-        #region Fields
-
-        private List<Card> _cards;
-
-        #endregion Fields
 
         #region Properties
 
@@ -62,22 +53,14 @@ namespace Boxy_Core.Model.SerializedData
         {
             get
             {
-                //= @"artwork-preferences.json"
-                return Environment.ExpandEnvironmentVariables(@"%AppData%/Boxy/scryfall-oracle-cards.json");
+                return Environment.ExpandEnvironmentVariables("%AppData%/Boxy/scryfall-oracle-cards.json");
             }
         }
 
         /// <summary>
         /// The queryable card collection.
         /// </summary>
-        // ReSharper disable once MemberCanBePrivate.Global - JSON serializable
-        public List<Card> Cards
-        {
-            get
-            {
-                return _cards ?? (_cards = new List<Card>());
-            }
-        }
+        public List<Card> Cards { get; }
 
         /// <summary>
         /// The time when the user last updated this catalog.
@@ -87,8 +70,6 @@ namespace Boxy_Core.Model.SerializedData
         /// <summary>
         /// Metadata information about the catalog.
         /// </summary>
-        // ReSharper disable once MemberCanBePrivate.Global - JSON serializable
-        // ReSharper disable once UnusedAutoPropertyAccessor.Global
         public BulkData ScryfallMetadata { get; }
 
         #endregion Properties
@@ -119,11 +100,9 @@ namespace Boxy_Core.Model.SerializedData
 
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this));
 
-            using (var fileStream = new FileStream(SavePath, FileMode.Create))
-            {
-                fileStream.Write(data, 0, data.Length);
-                fileStream.Flush();
-            }
+            using var fileStream = new FileStream(SavePath, FileMode.Create);
+            fileStream.Write(data, 0, data.Length);
+            fileStream.Flush();
         }
 
         #endregion Methods

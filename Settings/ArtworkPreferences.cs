@@ -3,11 +3,12 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace Boxy_Core.Model.SerializedData
+namespace Boxy_Core.Settings
 {
     /// <summary>
     /// Holds a mapping of Oracle Ids to Cards to store and retrieve a user's preferred printing of a card.
     /// </summary>
+    [Serializable]
     public class ArtworkPreferences : Dictionary<string, Card>
     {
         #region Constructors
@@ -40,8 +41,7 @@ namespace Boxy_Core.Model.SerializedData
         {
             get
             {
-                //= @"artwork-preferences.json"
-                return Environment.ExpandEnvironmentVariables(@"%AppData%/Boxy/artwork-preferences.json");
+                return Environment.ExpandEnvironmentVariables("%AppData%/Boxy/artwork-preferences.json");
             }
         }
 

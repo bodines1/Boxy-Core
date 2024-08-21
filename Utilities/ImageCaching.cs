@@ -1,19 +1,20 @@
 ﻿using System.Drawing;
+using Boxy_Core.Model;
 
-namespace Boxy_Core.Model.SerializedData
+namespace Boxy_Core.Utilities
 {
     /// <summary>
     /// Class for accessing bitmap objects pulled from the API, to avoid re-querying for them.
     /// </summary>
     public static class ImageCaching
     {
-        private static Dictionary<string, Bitmap> _imageCache;
+        private static Dictionary<string, Bitmap>? _imageCache;
 
         private static Dictionary<string, Bitmap> ImageCache
         {
             get
             {
-                return _imageCache ?? (_imageCache = new Dictionary<string, Bitmap>());
+                return _imageCache ??= new Dictionary<string, Bitmap>();
             }
         }
 
@@ -26,7 +27,7 @@ namespace Boxy_Core.Model.SerializedData
         {
             if (string.IsNullOrWhiteSpace(imageUri))
             {
-                throw new ArgumentNullException(nameof(imageUri), @"Image request URI cannot be null or empty/whitespace. Consumer must check before using this method.");
+                throw new ArgumentNullException(nameof(imageUri), "Image request URI cannot be null or empty/whitespace. Consumer must check before using this method.");
             }
 
             while (IsCacheBeingAccessed)
@@ -50,7 +51,7 @@ namespace Boxy_Core.Model.SerializedData
             {
                 ImageCache.Remove(ImageCache.First().Key);
             }
-            
+
             IsCacheBeingAccessed = false;
             return bitmap;
         }

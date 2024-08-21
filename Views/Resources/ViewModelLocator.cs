@@ -1,5 +1,4 @@
-﻿using Boxy_Core.Model.SerializedData;
-using Boxy_Core.Reporting;
+﻿using Boxy_Core.Reporting;
 using Boxy_Core.ViewModels;
 using Boxy_Core.Views.Dialogs;
 using System;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Boxy_Core.ViewModels.Dialogs;
+using Boxy_Core.Settings;
 
 namespace Boxy_Core.Views.Resources
 {

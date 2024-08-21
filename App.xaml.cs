@@ -1,5 +1,5 @@
-﻿using Boxy_Core.Model.SerializedData;
-using Boxy_Core.Mvvm;
+﻿using Boxy_Core.Mvvm;
+using Boxy_Core.Utilities;
 using System.Text;
 using System.Windows;
 

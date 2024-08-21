@@ -1,9 +1,9 @@
 ﻿using Boxy_Core.Model;
 using Boxy_Core.Model.ScryfallData;
-using Boxy_Core.Model.SerializedData;
 using Boxy_Core.Mvvm;
 using Boxy_Core.Properties;
 using Boxy_Core.Reporting;
+using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using PdfSharp.Drawing;
 using System.Collections.ObjectModel;
