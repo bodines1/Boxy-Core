@@ -1,15 +1,12 @@
 ﻿using Boxy_Core.Model;
 using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
-using Boxy_Core.Properties;
 using Boxy_Core.Reporting;
 using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using PdfSharp.Drawing;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
-using System.Reflection;
 using System.Timers;
 using System.Windows.Media.Imaging;
 
@@ -19,30 +16,18 @@ namespace Boxy_Core.ViewModels
     {
         #region Constructors
 
-        public CardViewModel(IReporter reporter, ArtworkPreferences artPreferences, Card card, int quantity, double zoomPercent)
+        public CardViewModel(IReporter reporter, ArtworkPreferences artPreferences, ScryfallService scryfallService, Card card, int quantity, double zoomPercent)
         {
             Reporter = reporter;
             ArtPreferences = artPreferences;
+            ScryfallService = scryfallService;
             Quantity = quantity;
-
-            if (card.IsToken)
-            {
-                IsLegal = true;
-            }
-            else
-            {
-                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.DefaultSettings.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
-                string legalityString = specificFormatPropInfo.GetValue(card.Legalities)?.ToString() ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
-                IsLegal = legalityString == "legal";
-            }
 
             UpdateImageTimer = new System.Timers.Timer(100) { AutoReset = false };
             UpdateImageTimer.Elapsed += UpdateImageTimerOnElapsed;
 
             ScaleToPercent(zoomPercent);
             LoadPrints(card);
-
-            Settings.DefaultSettings.SettingsSaving += DefaultOnSettingsSaving;
         }
 
         #endregion Constructors
@@ -72,6 +57,8 @@ namespace Boxy_Core.ViewModels
         private IReporter Reporter { get; }
 
         private ArtworkPreferences ArtPreferences { get; }
+
+        private ScryfallService ScryfallService { get; }
 
         private System.Timers.Timer UpdateImageTimer { get; }
 
@@ -279,23 +266,6 @@ namespace Boxy_Core.ViewModels
         }
 
         /// <summary>
-        /// Indicates whether this card/set of cards is legal in the required format.
-        /// </summary>
-        public bool IsLegal
-        {
-            get
-            {
-                return _isLegal;
-            }
-
-            set
-            {
-                _isLegal = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
         /// Indicates when a background task is busy loading an image from the services.
         /// </summary>
         public bool IsLoadingImage
@@ -319,27 +289,15 @@ namespace Boxy_Core.ViewModels
         private async void UpdateImageTimerOnElapsed(object? sender, ElapsedEventArgs e)
         {
             UpdateImageTimer.Stop();
+
+            if (DispatcherHelper.UiDispatcher is null)
+            {
+                throw new ApplicationException("The UiDispatcher was not initialized correctly on app startup and is null.");
+            }
+
+            IsLoadingImage = true;
             await DispatcherHelper.UiDispatcher.InvokeAsync(UpdateCardImage);
-        }
-
-        private void DefaultOnSettingsSaving(object sender, CancelEventArgs e)
-        {
-            Card card = SelectedPrinting ?? AllPrintings.FirstOrDefault();
-
-            if (card == null)
-            {
-                return;
-            }
-
-            if (card.IsToken)
-            {
-                IsLegal = true;
-            }
-            else
-            {
-                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.DefaultSettings.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
-                IsLegal = specificFormatPropInfo.GetValue(card.Legalities).ToString() == "legal";
-            }
+            IsLoadingImage = false;
         }
 
         /// <summary>
@@ -382,29 +340,37 @@ namespace Boxy_Core.ViewModels
 
             IsPopulatingPrints = false;
             SelectedPrinting = AllPrintings[SelectedPrintingIndex];
+            IsLoadingImage = true;
             await UpdateCardImage();
+            IsLoadingImage = false;
         }
 
         private async Task UpdateCardImage()
         {
-            IsLoadingImage = true;
+            if (SelectedPrinting is null)
+            {
+                return;
+            }
 
             if (SelectedPrinting.IsDoubleFaced)
             {
-                FrontImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(SelectedPrinting.CardFaces[0].ImageUris.BorderCrop, Reporter));
-                BackImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(SelectedPrinting.CardFaces[1].ImageUris.BorderCrop, Reporter));
+                FrontImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(ScryfallService, SelectedPrinting.CardFaces[0].ImageUris.BorderCrop, Reporter));
+                BackImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(ScryfallService, SelectedPrinting.CardFaces[1].ImageUris.BorderCrop, Reporter));
             }
             else
             {
-                FrontImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(SelectedPrinting.ImageUris.BorderCrop, Reporter));
+                FrontImage = ImageHelper.LoadBitmap(await ImageCaching.GetImageAsync(ScryfallService, SelectedPrinting.ImageUris.BorderCrop, Reporter));
                 BackImage = null;
             }
-
-            IsLoadingImage = false;
         }
 
         public CardPageImage GetFullCardPageImage()
         {
+            if (SelectedPrinting is null)
+            {
+                throw new InvalidOperationException($"Called {nameof(GetFullCardPageImage)} while {nameof(SelectedPrinting)} is null.");
+            }
+
             if (FrontImage is null)
             {
                 throw new InvalidOperationException($"Called {nameof(GetFullCardPageImage)} while {nameof(FrontImage)} is null.");

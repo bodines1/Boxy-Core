@@ -44,9 +44,9 @@ namespace Boxy_Core.Settings
         /// <summary>
         /// Gets the card ID of the user's preferred (most recently selected) printing of a card. Stored persistently between sessions.
         /// </summary>
-        public Card GetPreferredCard(Card card)
+        public Card GetPreferredCard(Card? card)
         {
-            if (card == null)
+            if (card is null)
             {
                 throw new ArgumentNullException(nameof(card), "Card cannot be null. Consumer must check object before using this method.");
             }
@@ -65,7 +65,7 @@ namespace Boxy_Core.Settings
         /// <param name="card">The card to set as preferred.</param>
         public void UpdatePreferredCard(Card? card)
         {
-            if (card == null)
+            if (card is null)
             {
                 return;
             }

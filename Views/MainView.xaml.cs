@@ -77,7 +77,14 @@ namespace Boxy_Core.Views
             while (e.LeftButton == MouseButtonState.Pressed)
             {
                 await Task.Delay(50);
-                Card card = await ScryfallService.GetRandomCard(((MainViewModel) DataContext).Reporter);
+                var scryfallService = ((MainViewModel)DataContext).ScryfallService;
+                Card? card = await scryfallService.GetRandomCard(((MainViewModel)DataContext).Reporter);
+
+                if (card is null)
+                {
+                    return;
+                }
+
                 int qty = random.Next(1, 5);
                 string qtyAsString = qty == 1 ? string.Empty : $"{qty} ";
                 DecklistTextBox.AppendText(qtyAsString + card.Name + "\r\n");

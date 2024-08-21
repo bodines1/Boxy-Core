@@ -118,7 +118,10 @@ namespace Boxy_Core.Utilities
                     int row = i / imageDrawer.Columns;
                     int frontColumn = i % imageDrawer.Columns;
 
-                    await imageDrawer.DrawImage(cardPageImage.FrontImage, row, frontColumn);
+                    if (cardPageImage.FrontImage != null)
+                    {
+                        await imageDrawer.DrawImage(cardPageImage.FrontImage, row, frontColumn);
+                    }
                 }
             }
 
@@ -170,7 +173,10 @@ namespace Boxy_Core.Utilities
                     int frontColumn = i % frontImageDrawer.Columns;
                     int backColumn = frontImageDrawer.Columns - 1 - frontColumn;
 
-                    await frontImageDrawer.DrawImage(cardPageImage.FrontImage, row, frontColumn);
+                    if (cardPageImage.FrontImage != null)
+                    {
+                        await frontImageDrawer.DrawImage(cardPageImage.FrontImage, row, frontColumn);
+                    }
 
                     if (cardPageImage.BackImage != null)
                     {

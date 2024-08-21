@@ -1,16 +1,56 @@
-﻿using Boxy_Core.Model.ScryfallData;
+﻿using Boxy_Core.DialogService;
+using Boxy_Core.Model.ScryfallData;
+using Boxy_Core.Utilities;
+using Boxy_Core.ViewModels.Dialogs;
 using System.Drawing;
 using System.IO;
-using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Text;
 using System.Text.Json;
 
 namespace Boxy_Core.Model
 {
-    public static class ScryfallService
+    public class ScryfallService
     {
+        public ScryfallService(IDialogService dialogService)
+        {
+            _dialogService = dialogService;
+
+            Version? version = null;
+
+            if (ApplicationDeployment.IsNetworkDeployed)
+            {
+                version = ApplicationDeployment.CurrentDeployment?.CurrentVersion;
+            }
+
+            version ??= Assembly.GetEntryAssembly()?.GetName().Version ?? Assembly.GetExecutingAssembly().GetName().Version ?? throw new ApplicationException("Could not get application version for Scryfall services.");
+
+            _httpClient = new();
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"Boxy/{version}");
+            _httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+        }
+
+        private IDialogService _dialogService;
+        private HttpClient _httpClient;
+
         #region Services
 
-        public static async Task<Card> GetFuzzyCardAsync(string search, IProgress<string> reporter)
+        private void DisplayError(string message, Exception? exception = null)
+        {
+            var messageBuilder = new StringBuilder(message);
+
+            while (exception is not null)
+            {
+                messageBuilder.AppendLine(exception.Message);
+                exception = exception.InnerException;
+            }
+
+            var infoVm = new MessageDialogViewModel(messageBuilder.ToString().Trim(), "Error using Scryfall API");
+            _dialogService.Show(infoVm);
+        }
+
+        public async Task<Card?> GetFuzzyCardAsync(string search, IProgress<string> reporter)
         {
             // Return nothing if search value is meaningless.
             if (string.IsNullOrWhiteSpace(search))
@@ -21,23 +61,38 @@ namespace Boxy_Core.Model
             // The API expects search terms to be separated by the + symbol in place of whitespace.
             string[] searchTerms = search.Trim().Split();
             search = string.Join("+", searchTerms);
+            string request = FuzzyCardSearch + search;
+            HttpResponseMessage response;
 
             try
             {
-                using (var webClient = new WebClient())
-                {
-                    string request = FuzzyCardSearch + search;
-                    string json = await webClient.DownloadStringTaskAsync(request);
-                    return JsonSerializer.Deserialize<Card>(json);
-                }
+                response = await _httpClient.GetAsync(request);
             }
-            catch (WebException)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            string serialized = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<Card>(serialized);
+
+            if (result is null)
+            {
+                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                return null;
+            }
+
+            return result;
         }
 
-        public static async Task<List<Card>> GetAllPrintingsAsync(Card card, IProgress<string> reporter)
+        public async Task<List<Card>?> GetAllPrintingsAsync(Card card, IProgress<string> reporter)
         {
             // Return nothing if search value is meaningless.
             if (card == null)
@@ -45,36 +100,74 @@ namespace Boxy_Core.Model
                 throw new ArgumentNullException(nameof(card), "Card object cannot be null. Consumer must check card before using this method.");
             }
 
+            string request = ExactCardSearchWithPrintings + card.OracleId;
+            HttpResponseMessage response;
+            var result = new List<Card>();
+
             try
             {
-                using (var webClient = new WebClient())
-                {
-                    var result = new List<Card>();
-
-                    string json = await webClient.DownloadStringTaskAsync(ExactCardSearchWithPrintings + card.OracleId);
-                    var scryfallList = JsonSerializer.Deserialize<ScryfallList<Card>>(json);
-                    result.AddRange(scryfallList.Data);
-
-                    while (scryfallList.HasMore)
-                    {
-                        json = await webClient.DownloadStringTaskAsync(scryfallList.NextPage);
-                        scryfallList = JsonSerializer.Deserialize<ScryfallList<Card>>(json);
-                        result.AddRange(scryfallList.Data);
-                    }
-
-                    result.RemoveAll(crd => crd.CollectorNumber.Any(ch => ch == 's' || ch == 'p' || crd.Digital));
-
-                    return result;
-                }
+                response = await _httpClient.GetAsync(request);
             }
-            catch (WebException)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            string serialized = await response.Content.ReadAsStringAsync();
+            var scryfallList = JsonSerializer.Deserialize<ScryfallList<Card>>(serialized);
+
+            if (scryfallList is null)
+            {
+                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                return null;
+            }
+
+            result.AddRange(scryfallList.Data);
+
+            while (scryfallList.HasMore)
+            {
+                request = scryfallList.NextPage;
+
+                try
+                {
+                    response = await _httpClient.GetAsync(request);
+                }
+                catch (Exception exc)
+                {
+                    DisplayError($"{request}\r\nAPI Error", exc);
+                    return null;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                    return null;
+                }
+
+                serialized = await response.Content.ReadAsStringAsync();
+                scryfallList = JsonSerializer.Deserialize<ScryfallList<Card>>(serialized);
+
+                if (scryfallList is null)
+                {
+                    DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                    return null;
+                }
+
+                result.AddRange(scryfallList.Data);
+            }
+
+            result.RemoveAll(crd => crd.CollectorNumber.Any(ch => ch == 's' || ch == 'p' || crd.Digital));
+            return result;
         }
 
-        // ReSharper disable once UnusedParameter.Global <-- I think I may want the reporter later, but it is safe to remove
-        public static async Task<Bitmap> GetImageAsync(string imageUri, IProgress<string> reporter)
+        public async Task<Bitmap?> GetImageAsync(string imageUri, IProgress<string> reporter)
         {
             // Can't find image without a valid card.
             if (string.IsNullOrWhiteSpace(imageUri))
@@ -82,72 +175,140 @@ namespace Boxy_Core.Model
                 throw new ArgumentNullException(nameof(imageUri), "Image request URI cannot be null or empty/whitespace. Consumer must check before using this method.");
             }
 
+            string request = imageUri;
+            HttpResponseMessage response;
+
             try
             {
-                using (var client = new WebClient())
+                response = await _httpClient.GetAsync(request);
+            }
+            catch (Exception exc)
+            {
+                DisplayError($"{request}\r\nAPI Error", exc);
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            try
+            {
+                using (Stream stream = await response.Content.ReadAsStreamAsync())
                 {
-                    using (Stream stream = await client.OpenReadTaskAsync(imageUri))
-                    {
-                        var bitmap = new Bitmap(stream ?? throw new InvalidOperationException("File stream from service was null, ensure the URI is correct."));
-                        await stream.FlushAsync();
-                        return bitmap;
-                    }
+                    var bitmap = new Bitmap(stream ?? throw new InvalidOperationException("File stream from service was null, ensure the URI is correct."));
+                    await stream.FlushAsync();
+                    return bitmap;
                 }
             }
-            catch (WebException)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nBitmap read error.", exc);
                 return null;
             }
         }
 
-        public static async Task<ScryfallList<BulkData>> GetBulkDataInfo(IProgress<string> reporter)
+        public async Task<ScryfallList<BulkData>?> GetBulkDataInfo(IProgress<string> reporter)
         {
+            string request = BulkData.ToString();
+            HttpResponseMessage response;
+
             try
             {
-                using (var webClient = new WebClient())
-                {
-                    string json = await webClient.DownloadStringTaskAsync(BulkData);
-                    return JsonSerializer.Deserialize<ScryfallList<BulkData>>(json);
-                }
+                response = await _httpClient.GetAsync(request);
             }
-            catch (WebException)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            string serialized = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<ScryfallList<BulkData>>(serialized);
+
+            if (result is null)
+            {
+                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                return null;
+            }
+
+            return result;
         }
 
-        public static async Task<List<Card>> GetBulkCards(Uri catalogUri, IProgress<string> reporter)
+        public async Task<List<Card>?> GetBulkCards(Uri catalogUri, IProgress<string> reporter)
         {
+            string request = catalogUri.ToString();
+            HttpResponseMessage response;
+
             try
             {
-                using (var webClient = new WebClient())
-                {
-                    string json = await webClient.DownloadStringTaskAsync(catalogUri);
-                    return JsonSerializer.Deserialize<List<Card>>(json);
-                }
+                response = await _httpClient.GetAsync(request);
             }
-            catch (WebException)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            string serialized = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<List<Card>>(serialized);
+
+            if (result is null)
+            {
+                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                return null;
+            }
+
+            return result;
         }
 
-        public static async Task<Card> GetRandomCard(IProgress<string> reporter)
+        public async Task<Card?> GetRandomCard(IProgress<string> reporter)
         {
+            string name = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
+            reporter.Report(name);
+            string request = RandomCard.ToString();
+            HttpResponseMessage response;
+
             try
             {
-                using (var webClient = new WebClient())
-                {
-                    string name = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
-                    reporter.Report(name);
-                    string json = await webClient.DownloadStringTaskAsync(RandomCard);
-                    return JsonSerializer.Deserialize<Card>(json);
-                }
+                response = await _httpClient.GetAsync(request);
             }
-            catch (WebException e)
+            catch (Exception exc)
             {
+                DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                return null;
+            }
+
+            string serialized = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<Card>(serialized);
+
+            if (result is null)
+            {
+                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                return null;
+            }
+
+            return result;
         }
 
         #endregion Services

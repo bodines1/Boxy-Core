@@ -1,16 +1,11 @@
 ﻿using Boxy_Core.DialogService;
-using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Model;
+using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
 using Boxy_Core.Reporting;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using Boxy_Core.Utilities;
+using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
 
 namespace Boxy_Core.ViewModels.Dialogs
 {
@@ -31,7 +26,7 @@ namespace Boxy_Core.ViewModels.Dialogs
         /// <summary>
         /// Creates a new instance of <see cref="ChooseCardDialogViewModel"/>.
         /// </summary>
-        public ChooseCardDialogViewModel(List<Card> cards, IReporter reporter)
+        public ChooseCardDialogViewModel(List<Card> cards, IReporter reporter, ScryfallService scryfallService)
         {
             if (cards == null || !cards.Any())
             {
@@ -40,6 +35,7 @@ namespace Boxy_Core.ViewModels.Dialogs
 
             Cards = cards;
             Reporter = reporter;
+            ScryfallService = scryfallService;
             CardName = cards[0].Name;
         }
 
@@ -47,7 +43,7 @@ namespace Boxy_Core.ViewModels.Dialogs
 
         #region Fields
 
-        private ObservableCollection<ImageWithIndex> _images;
+        private ObservableCollection<ImageWithIndex>? _images;
 
         #endregion Fields
 
@@ -56,6 +52,8 @@ namespace Boxy_Core.ViewModels.Dialogs
         private List<Card> Cards { get; }
 
         private IReporter Reporter { get; }
+
+        private ScryfallService ScryfallService { get; }
 
         public string CardName { get; }
 
@@ -66,20 +64,20 @@ namespace Boxy_Core.ViewModels.Dialogs
         {
             get
             {
-                return _images ?? (_images = new ObservableCollection<ImageWithIndex>());
+                return _images ??= [];
             }
         }
 
         /// <summary>
         /// The card chosen by the user.
         /// </summary>
-        public Card ChosenCard { get; private set; }
+        public Card? ChosenCard { get; private set; }
 
         #endregion Properties
 
         #region Commands
 
-        private RelayCommand _chooseCard;
+        private RelayCommand? _chooseCard;
 
         /// <summary>
         /// Gets a command which chooses a card from the options based on user input.
@@ -88,13 +86,13 @@ namespace Boxy_Core.ViewModels.Dialogs
         {
             get
             {
-                return _chooseCard ?? (_chooseCard = new RelayCommand(ChooseCard_Execute));
+                return _chooseCard ??= new RelayCommand(ChooseCard_Execute);
             }
         }
 
-        private void ChooseCard_Execute(object parameter)
+        private void ChooseCard_Execute(object? parameter)
         {
-            if (!(parameter is ImageWithIndex image))
+            if (parameter is not ImageWithIndex image)
             {
                 return;
             }
@@ -117,7 +115,7 @@ namespace Boxy_Core.ViewModels.Dialogs
                     continue;
                 }
 
-                BitmapSource image = ImageHelper.LoadBitmap(await ScryfallService.GetImageAsync(card.ImageUris.BorderCrop, Reporter));
+                BitmapSource? image = ImageHelper.LoadBitmap(await ScryfallService.GetImageAsync(card.ImageUris.BorderCrop, Reporter));
 
                 if (image != null)
                 {

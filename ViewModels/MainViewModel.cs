@@ -2,16 +2,13 @@
 using Boxy_Core.Model;
 using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
-using Boxy_Core.Properties;
 using Boxy_Core.Reporting;
 using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using Boxy_Core.ViewModels.Dialogs;
 using PdfSharp.Pdf;
-using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -27,19 +24,16 @@ namespace Boxy_Core.ViewModels
         /// </summary>
         /// <param name="dialogService">Service for resolving and showing dialog windows from viewmodels.</param>
         /// <param name="reporter">Reports status and progress events to subscribers.</param>
-        /// <param name="cardCatalog">Holds a queryable set of all oracle cards (no duplicate printings) to prevent excess queries to ScryfallAPI.</param>
-        /// <param name="artworkPreferences">Holds a mapping of Oracle Ids to Card Ids to store and retrieve a user's preferred printing of a card.</param>
-        public MainViewModel(IDialogService dialogService, IReporter reporter)
+        /// <param name="scryfallService">Methods for consuming the Scryfall HTTP API.</param>
+        public MainViewModel(IDialogService dialogService, IReporter reporter, ScryfallService scryfallService)
         {
             DialogService = dialogService;
             Reporter = reporter;
+            ScryfallService = scryfallService;
             ZoomPercent = DefaultSettings.UserSettings.ZoomPercent;
             DecklistText = string.Empty;
             
-            DisplayedCards = new ObservableCollection<CardViewModel>();
             DisplayedCards.CollectionChanged += OnDisplayedCardsOnCollectionChanged;
-            DisplayErrors = new ObservableCollection<string>();
-            SavedPdfFilePaths = new ObservableCollection<string>();
 
             if (ApplicationDeployment.IsNetworkDeployed)
             {
@@ -82,6 +76,11 @@ namespace Boxy_Core.ViewModels
         public IReporter Reporter { get; }
 
         /// <summary>
+        /// Reports status and progress events to subscribers.
+        /// </summary>
+        public ScryfallService ScryfallService { get; }
+
+        /// <summary>
         /// The version of the software currently running.
         /// </summary>
         public string SoftwareVersion { get; }
@@ -89,17 +88,17 @@ namespace Boxy_Core.ViewModels
         /// <summary>
         /// A collection of card view models to display, and later to build the PDF.
         /// </summary>
-        public ObservableCollection<CardViewModel> DisplayedCards { get; }
+        public ObservableCollection<CardViewModel> DisplayedCards { get; } = [];
 
         /// <summary>
         /// Error messages generated during the card building process, stored to display to user.
         /// </summary>
-        public ObservableCollection<string> DisplayErrors { get; }
+        public ObservableCollection<string> DisplayErrors { get; } = [];
 
         /// <summary>
         /// A collection of all PDF files user has created since the app started.
         /// </summary>
-        public ObservableCollection<string> SavedPdfFilePaths { get; }
+        public ObservableCollection<string> SavedPdfFilePaths { get; } = [];
 
         /// <summary>
         /// Last status args received from the <see cref="Reporter"/>.
@@ -255,12 +254,16 @@ namespace Boxy_Core.ViewModels
             {
                 List<Card> cards = DefaultSettings.CardCatalog.FindExactCard(lines[i].SearchTerm);
 
-                if (!cards.Any())
+                if (cards.Count == 0)
                 {
-                    cards.Add(await ScryfallService.GetFuzzyCardAsync(lines[i].SearchTerm, Reporter));
+                    Card? fuzzySearchResult = await ScryfallService.GetFuzzyCardAsync(lines[i].SearchTerm, Reporter);
+                    if (fuzzySearchResult is not null)
+                    {
+                        cards.Add(fuzzySearchResult);
+                    }
                 }
 
-                if (!cards.Any())
+                if (cards.Count == 0)
                 {
                     Reporter.Report($"[{lines[i].SearchTerm}] returned no results", true);
                     continue;
@@ -270,7 +273,7 @@ namespace Boxy_Core.ViewModels
 
                 if (cards.Count > 1)
                 {
-                    var cardChooser = new ChooseCardDialogViewModel(cards, Reporter);
+                    var cardChooser = new ChooseCardDialogViewModel(cards, Reporter, ScryfallService);
                     await cardChooser.LoadImagesFromCards();
 
                     if (!(DialogService.ShowDialog(cardChooser) ?? false))
@@ -285,7 +288,7 @@ namespace Boxy_Core.ViewModels
                     preferredCard = DefaultSettings.ArtworkPreferences.GetPreferredCard(cards.Single());
                 }
 
-                var cardVm = new CardViewModel(Reporter, DefaultSettings.ArtworkPreferences, preferredCard, lines[i].Quantity, ZoomPercent);
+                var cardVm = new CardViewModel(Reporter, DefaultSettings.ArtworkPreferences, ScryfallService, preferredCard, lines[i].Quantity, ZoomPercent);
                 DisplayedCards.Add(cardVm);
                 await Task.Delay(1);
                 Reporter.Progress(i, 0, lines.Count - 1);
@@ -408,10 +411,17 @@ namespace Boxy_Core.ViewModels
         {
             Reporter.StartBusy(LovecraftianPhraseGenerator.RandomPhrase());
 
-            BulkData oracleBulkData = (await ScryfallService.GetBulkDataInfo(Reporter)).Data.Single(bd => bd.Name.Contains("Oracle"));
-            List<Card> cards = await ScryfallService.GetBulkCards(oracleBulkData.PermalinkUri, Reporter);
+            var bulkDataList = await ScryfallService.GetBulkDataInfo(Reporter);
+            if (bulkDataList is null)
+            {
+                return;
+            }
 
-            if (cards == null || cards.Count == 0)
+            BulkData oracleBulkData = bulkDataList.Data.Single(bd => bd.Name.Contains("Oracle"));
+
+            List<Card>? cards = await ScryfallService.GetBulkCards(oracleBulkData.PermalinkUri, Reporter);
+
+            if (cards is null || cards.Count == 0)
             {
                 Reporter.Report("Cards not found or empty", true);
                 Reporter.StopBusy();

@@ -11,8 +11,13 @@ namespace Boxy_Core.Utilities
         [DllImport("gdi32")]
         private static extern int DeleteObject(IntPtr o);
 
-        public static BitmapSource LoadBitmap(Bitmap source)
+        public static BitmapSource? LoadBitmap(Bitmap? source)
         {
+            if (source is null)
+            {
+                return null;
+            }
+
             IntPtr ip = source.GetHbitmap();
             BitmapSource bs;
             try

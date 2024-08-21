@@ -23,7 +23,7 @@ namespace Boxy_Core.Utilities
         /// <summary>
         /// Gets the cached bitmap image representing the card object. Will query the API if it has not been loaded, otherwise gets the cached version.
         /// </summary>
-        public static async Task<Bitmap> GetImageAsync(string imageUri, IProgress<string> reporter)
+        public static async Task<Bitmap?> GetImageAsync(ScryfallService scryfallService, string imageUri, IProgress<string> reporter)
         {
             if (string.IsNullOrWhiteSpace(imageUri))
             {
@@ -44,7 +44,13 @@ namespace Boxy_Core.Utilities
                 return ImageCache[imageUri];
             }
 
-            Bitmap bitmap = await ScryfallService.GetImageAsync(imageUri, reporter);
+            Bitmap? bitmap = await scryfallService.GetImageAsync(imageUri, reporter);
+
+            if (bitmap is null)
+            {
+                return null;
+            }
+
             ImageCache.Add(imageUri, bitmap);
 
             if (ImageCache.Count > 100)
