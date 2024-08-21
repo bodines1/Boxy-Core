@@ -28,10 +28,6 @@ namespace Boxy_Core.Views.Resources
             DialogService = new DialogService.DialogService();
             Reporter = new ReporterNoLog();
 
-            // Initialize large/serialized objects
-            CardCatalog = CardCatalog.CreateFromFile();
-            ArtworkPreferences = ArtworkPreferences.CreateFromFile();
-
             // Initialize container dependencies.
             DialogService.Register<MessageDialogViewModel, MessageDialogView>();
             DialogService.Register<YesNoDialogViewModel, YesNoDialogView>();
@@ -39,7 +35,7 @@ namespace Boxy_Core.Views.Resources
             DialogService.Register<ChooseCardDialogViewModel, ChooseCardDialogView>();
 
             // Initialize View Models
-            MainVm = new MainViewModel(DialogService, Reporter, CardCatalog, ArtworkPreferences);
+            MainVm = new MainViewModel(DialogService, Reporter);
         }
 
         #endregion Constructors
@@ -49,10 +45,6 @@ namespace Boxy_Core.Views.Resources
         private DialogService.DialogService DialogService { get; }
 
         private IReporter Reporter { get; }
-
-        private CardCatalog CardCatalog { get; }
-
-        private ArtworkPreferences ArtworkPreferences { get; }
 
         #endregion Dependencies
 

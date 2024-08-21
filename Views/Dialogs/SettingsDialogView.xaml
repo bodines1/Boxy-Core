@@ -56,31 +56,6 @@
             <UniformGrid
                 Margin="1"
                 Rows="1"
-                ToolTip="Choose what format you would like to check cards against">
-                <Label
-                    HorizontalAlignment="Right"
-                    VerticalContentAlignment="Center"
-                    Content="Format" />
-                <ComboBox
-                    VerticalContentAlignment="Center"
-                    ItemsSource="{Binding FormatOptions}"
-                    SelectedItem="{Binding SelectedFormat}" />
-            </UniformGrid>
-            <UniformGrid
-                Margin="1"
-                Rows="1"
-                ToolTip="The limit on total card price when adding cards before the text turns orange">
-                <Label
-                    HorizontalAlignment="Right"
-                    VerticalContentAlignment="Center"
-                    Content="Price Limit" />
-                <TextBox
-                    VerticalContentAlignment="Center"
-                    Text="{Binding MaxPrice}" />
-            </UniformGrid>
-            <UniformGrid
-                Margin="1"
-                Rows="1"
                 ToolTip="Folder to save the PDF files to">
                 <Label
                     HorizontalAlignment="Right"
@@ -88,7 +63,7 @@
                     Content="PDF Save Path" />
                 <TextBox
                     VerticalContentAlignment="Center"
-                    Text="{Binding PdfSaveFolder}" />
+                    Text="{Binding DefaultSettings.UserSettings.PdfSaveFolder}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -101,7 +76,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding PageSizeOptions}"
-                    SelectedItem="{Binding PdfPageSize}" />
+                    SelectedItem="{Binding DefaultSettings.UserSettings.PdfPageSize}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -127,7 +102,7 @@
                         Maximum="110"
                         Minimum="90"
                         TickFrequency="1"
-                        Value="{Binding PdfScalingPercent}" />
+                        Value="{Binding DefaultSettings.UserSettings.PdfScalingPercent}" />
                 </DockPanel>
             </UniformGrid>
             <UniformGrid
@@ -140,7 +115,7 @@
                     Content="Print 2-Sided" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding PrintTwoSided}" />
+                    IsChecked="{Binding DefaultSettings.UserSettings.PrintTwoSided}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -152,13 +127,13 @@
                     Content="Cut Lines Between Cards" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding PdfHasCutLines}" />
+                    IsChecked="{Binding DefaultSettings.UserSettings.PdfHasCutLines}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
                 Rows="1"
                 ToolTip="Color of the cut lines"
-                Visibility="{Binding PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
+                Visibility="{Binding DefaultSettings.UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
                 <Label
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
@@ -166,7 +141,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding ColorOptions}"
-                    SelectedItem="{Binding CutLineColor}">
+                    SelectedItem="{Binding DefaultSettings.UserSettings.CutLineColor}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate
                             DataType="{x:Type drawing:XKnownColor}">
@@ -192,7 +167,7 @@
                 Margin="1"
                 Rows="1"
                 ToolTip="Size of the cut lines"
-                Visibility="{Binding PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
+                Visibility="{Binding DefaultSettings.UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
                 <Label
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
@@ -200,7 +175,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding LineSizeOptions}"
-                    SelectedItem="{Binding CutLineSize}">
+                    SelectedItem="{Binding DefaultSettings.UserSettings.CutLineSize}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate
                             DataType="{x:Type utilities:CutLineSizes}">
@@ -232,7 +207,7 @@
                     Content="Open PDF after download" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding PdfOpenWhenSaveDone}" />
+                    IsChecked="{Binding DefaultSettings.UserSettings.PdfOpenWhenSaveDone}" />
             </UniformGrid>
             <StackPanel
                 HorizontalAlignment="Center"

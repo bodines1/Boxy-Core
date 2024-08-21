@@ -1,6 +1,6 @@
 ﻿using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
-using Boxy_Core.Properties;
+using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using PdfSharp;
 using PdfSharp.Drawing;
@@ -24,33 +24,20 @@ namespace Boxy_Core.ViewModels.Dialogs
             PageSizeOptions.Remove(PageSize.Undefined);
             ColorOptions = Enum.GetValues(typeof(XKnownColor)).Cast<XKnownColor>().ToList();
             LineSizeOptions = Enum.GetValues(typeof(CutLineSizes)).Cast<CutLineSizes>().ToList();
+            DefaultSettings.UserSettings.PropertyChanged += UserSettings_PropertyChanged;
+        }
 
-            PdfSaveFolder = Settings.Default.PdfSaveFolder;
-            PdfHasCutLines = Settings.Default.PdfHasCutLines;
-            PrintTwoSided = Settings.Default.PrintTwoSided;
-            CutLineColor = Settings.Default.CutLineColor;
-            CutLineSize = Settings.Default.CutLineSize;
-            PdfScalingPercent = Settings.Default.PdfScalingPercent;
-            PdfOpenWhenSaveDone = Settings.Default.PdfOpenWhenSaveDone;
-            PdfPageSize = Settings.Default.PdfPageSize;
-            SelectedFormat = Settings.Default.SavedFormat;
-            MaxPrice = Settings.Default.MaxPrice;
+        private void UserSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            var temp = new CardPdfBuilder(DefaultSettings.UserSettings.PdfPageSize, DefaultSettings.UserSettings.PdfScalingPercent, DefaultSettings.UserSettings.PdfHasCutLines, DefaultSettings.UserSettings.CutLineSize, DefaultSettings.UserSettings.CutLineColor);
+            CardsPerPage = temp.ExampleImageDrawer.ImagesPerPage;
         }
 
         #endregion Constructors
 
         #region Fields
 
-        private string _pdfSaveFolder;
-        private PageSize _pdfPageSize;
-        private FormatTypes _selectedFormat;
-        private double _pdfScalingPercent;
-        private bool _pdfHasCutLines;
-        private bool _printTwoSided;
-        private XKnownColor _cutLineColor;
-        private CutLineSizes _cutLineSize;
-        private bool _pdfOpenWhenSaveDone;
-        private double _maxPrice;
+        private int _cardsPerPage;
 
         #endregion Fields
 
@@ -79,202 +66,30 @@ namespace Boxy_Core.ViewModels.Dialogs
         /// <summary>
         /// Way to display to user what the expected cards per page with their settings will be.
         /// </summary>
-        // ReSharper disable once MemberCanBeMadeStatic.Global <- Not possible, binding in XAML
         public int CardsPerPage
         {
             get
             {
-                var temp = new CardPdfBuilder(PdfPageSize, PdfScalingPercent, PdfHasCutLines, CutLineSize, CutLineColor);
-                return temp.ExampleImageDrawer.ImagesPerPage;
+                return _cardsPerPage;
             }
-        }
-
-        /// <summary>
-        /// PdfSaveFolder setting.
-        /// </summary>
-        public string PdfSaveFolder
-        {
-            get
-            {
-                return _pdfSaveFolder;
-            }
-
             set
             {
-                _pdfSaveFolder = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// PdfHasCutLines setting.
-        /// </summary>
-        public bool PdfHasCutLines
-        {
-            get
-            {
-                return _pdfHasCutLines;
-            }
-
-            set
-            {
-                _pdfHasCutLines = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CardsPerPage));
-            }
-        }
-
-        /// <summary>
-        /// PrintTwoSided setting.
-        /// </summary>
-        public bool PrintTwoSided
-        {
-            get
-            {
-                return _printTwoSided;
-            }
-
-            set
-            {
-                _printTwoSided = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// CutLineColor setting.
-        /// </summary>
-        public XKnownColor CutLineColor
-        {
-            get
-            {
-                return _cutLineColor;
-            }
-
-            set
-            {
-                _cutLineColor = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// CutLineSize setting.
-        /// </summary>
-        public CutLineSizes CutLineSize
-        {
-            get
-            {
-                return _cutLineSize;
-            }
-
-            set
-            {
-                _cutLineSize = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CardsPerPage));
-            }
-        }
-
-        /// <summary>
-        /// PdfScaling setting.
-        /// </summary>
-        public double PdfScalingPercent
-        {
-            get
-            {
-                return _pdfScalingPercent;
-            }
-
-            set
-            {
-                if (value < 90)
-                {
-                    _pdfScalingPercent = 90;
-                }
-                else if (value > 110)
-                {
-                    _pdfScalingPercent = 110;
-                }
-                else
-                {
-                    _pdfScalingPercent = value;
-                }
-                
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CardsPerPage));
-            }
-        }
-
-        /// <summary>
-        /// PdfOpenWhenSaveDone setting.
-        /// </summary>
-        public bool PdfOpenWhenSaveDone
-        {
-            get
-            {
-                return _pdfOpenWhenSaveDone;
-            }
-
-            set
-            {
-                _pdfOpenWhenSaveDone = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// PdfPageSize setting.
-        /// </summary>
-        public PageSize PdfPageSize
-        {
-            get
-            {
-                return _pdfPageSize;
-            }
-
-            set
-            {
-                _pdfPageSize = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CardsPerPage));
-            }
-        }
-
-        /// <summary>
-        /// SavedFormat setting.
-        /// </summary>
-        public FormatTypes SelectedFormat
-        {
-            get
-            {
-                return _selectedFormat;
-            }
-
-            set
-            {
-                _selectedFormat = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// MaxPrice setting.
-        /// </summary>
-        public double MaxPrice
-        {
-            get
-            {
-                return _maxPrice;
-            }
-
-            set
-            {
-                _maxPrice = value;
+                OnPropertyChanging();
+                _cardsPerPage = value;
                 OnPropertyChanged();
             }
         }
 
         #endregion Properties
+
+        #region Methods
+
+        public override void Cleanup()
+        {
+            DefaultSettings.UserSettings.PropertyChanged -= UserSettings_PropertyChanged;
+            base.Cleanup();
+        }
+
+        #endregion Methods
     }
 }

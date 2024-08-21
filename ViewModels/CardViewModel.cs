@@ -31,8 +31,8 @@ namespace Boxy_Core.ViewModels
             }
             else
             {
-                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.Default.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.Default.SavedFormat));
-                string legalityString = specificFormatPropInfo.GetValue(card.Legalities)?.ToString() ?? throw new ArgumentOutOfRangeException(nameof(Settings.Default.SavedFormat));
+                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.DefaultSettings.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
+                string legalityString = specificFormatPropInfo.GetValue(card.Legalities)?.ToString() ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
                 IsLegal = legalityString == "legal";
             }
 
@@ -42,7 +42,7 @@ namespace Boxy_Core.ViewModels
             ScaleToPercent(zoomPercent);
             LoadPrints(card);
 
-            Settings.Default.SettingsSaving += DefaultOnSettingsSaving;
+            Settings.DefaultSettings.SettingsSaving += DefaultOnSettingsSaving;
         }
 
         #endregion Constructors
@@ -337,7 +337,7 @@ namespace Boxy_Core.ViewModels
             }
             else
             {
-                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.Default.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.Default.SavedFormat));
+                PropertyInfo specificFormatPropInfo = card.Legalities.GetType().GetProperty(Settings.DefaultSettings.SavedFormat.ToString()) ?? throw new ArgumentOutOfRangeException(nameof(Settings.DefaultSettings.SavedFormat));
                 IsLegal = specificFormatPropInfo.GetValue(card.Legalities).ToString() == "legal";
             }
         }

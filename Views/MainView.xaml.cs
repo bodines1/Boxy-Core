@@ -2,6 +2,7 @@
 using Boxy_Core.Model.ScryfallData;
 using Boxy_Core.Mvvm;
 using Boxy_Core.Properties;
+using Boxy_Core.Settings;
 using Boxy_Core.ViewModels;
 using Boxy_Core.Views.Resources;
 using System.ComponentModel;
@@ -19,33 +20,27 @@ namespace Boxy_Core.Views
     {
         public MainView()
         {
-            //var locator = new ViewModelLocator();
-            //DataContext = locator.MainVM;
             InitializeComponent();
 
-            UpgradeSettings();
-
-            Left = Settings.Default.MainWindowLeft;
-            Top = Settings.Default.MainWindowTop;
-            Width = Settings.Default.MainWindowWidth;
-            Height = Settings.Default.MainWindowHeight;
-            WindowState = Settings.Default.MainWindowState;
+            Left = DefaultSettings.UserSettings.MainWindowLeft;
+            Top = DefaultSettings.UserSettings.MainWindowTop;
+            Width = DefaultSettings.UserSettings.MainWindowWidth;
+            Height = DefaultSettings.UserSettings.MainWindowHeight;
+            WindowState = DefaultSettings.UserSettings.MainWindowState;
             WindowFixer.SizeToFit(this);
             WindowFixer.MoveIntoView(this);
 
-            switch (Settings.Default.Column0Width)
+            switch (DefaultSettings.UserSettings.Column0Width)
             {
                 case < 150:
-                    Settings.Default.Column0Width = 150;
-                    Settings.Default.Save();
+                    DefaultSettings.UserSettings.Column0Width = 150;
                     break;
                 case > 400:
-                    Settings.Default.Column0Width = 400;
-                    Settings.Default.Save();
+                    DefaultSettings.UserSettings.Column0Width = 400;
                     break;
             }
 
-            GridColumn0.Width = new GridLength(Settings.Default.Column0Width);
+            GridColumn0.Width = new GridLength(DefaultSettings.UserSettings.Column0Width);
         }
 
         /// <summary>
@@ -56,39 +51,16 @@ namespace Boxy_Core.Views
         {
             if (WindowState != WindowState.Minimized)
             {
-                Settings.Default.MainWindowLeft = Left;
-                Settings.Default.MainWindowTop = Top;
-                Settings.Default.MainWindowWidth = ActualWidth;
-                Settings.Default.MainWindowHeight = ActualHeight;
-                Settings.Default.MainWindowState = WindowState;
-                Settings.Default.Save();
+                DefaultSettings.UserSettings.MainWindowLeft = Left;
+                DefaultSettings.UserSettings.MainWindowTop = Top;
+                DefaultSettings.UserSettings.MainWindowWidth = ActualWidth;
+                DefaultSettings.UserSettings.MainWindowHeight = ActualHeight;
+                DefaultSettings.UserSettings.MainWindowState = WindowState;
+                DefaultSettings.Save();
             }
 
             (DataContext as ViewModelBase)?.Cleanup();
             base.OnClosing(e);
-        }
-
-        /// <summary>
-        /// Attempt to copy user settings from previous application version if necessary.
-        /// Reset to default on failure.
-        /// </summary>
-        private static void UpgradeSettings()
-        {
-            try
-            {
-                if (!Settings.Default.UpdateSettings)
-                {
-                    return;
-                }
-
-                Settings.Default.Upgrade();
-                Settings.Default.UpdateSettings = false;
-                Settings.Default.Save();
-            }
-            catch
-            {
-                Settings.Default.Reset();
-            }
         }
 
         private async void ButtonBase_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -112,15 +84,14 @@ namespace Boxy_Core.Views
             }
         }
 
-        private void Thumb_OnDragCompleted(object sender, DragCompletedEventArgs e)
+        private void Thumb_OnDragCompleted(object? sender, DragCompletedEventArgs e)
         {
-            if (!(sender is GridSplitter))
+            if (sender is not GridSplitter)
             {
                 return;
             }
 
-            Settings.Default.Column0Width = GridColumn0.Width.Value;
-            Settings.Default.Save();
+            DefaultSettings.UserSettings.Column0Width = GridColumn0.Width.Value;
         }
     }
 }

@@ -17,17 +17,9 @@ namespace Boxy_Core.Settings
         /// Creates an instance of <see cref="ArtworkPreferences"/> by deserializing a file at the <see cref="SavePath"/> if it
         /// exists, or a new instance if deserialization fails.
         /// </summary>
-        public static ArtworkPreferences CreateFromFile()
+        public static ArtworkPreferences? CreateFromFile()
         {
-            try
-            {
-                var deserializedFromFile = JsonSerializer.Deserialize<ArtworkPreferences>(File.ReadAllText(SavePath));
-                return deserializedFromFile ?? new ArtworkPreferences();
-            }
-            catch (Exception)
-            {
-                return new ArtworkPreferences();
-            }
+            return JsonSerializer.Deserialize<ArtworkPreferences>(File.ReadAllText(SavePath));
         }
 
         #endregion Constructors
@@ -97,17 +89,9 @@ namespace Boxy_Core.Settings
 
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(this));
 
-            try
-            {
-                using var fileStream = new FileStream(SavePath, FileMode.Create);
-                fileStream.Write(data, 0, data.Length);
-                fileStream.Flush();
-            }
-            catch (Exception)
-            {
-                // ignored, no need for special handling of a save failure. The dictionary will simply fail to 
-                // deserialize on next call to CreateFromFile, which will result in a new preference file.
-            }
+            using var fileStream = new FileStream(SavePath, FileMode.Create);
+            fileStream.Write(data, 0, data.Length);
+            fileStream.Flush();
         }
 
         #endregion Methods

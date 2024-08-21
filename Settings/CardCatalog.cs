@@ -29,17 +29,9 @@ namespace Boxy_Core.Settings
         /// Creates an instance of <see cref="SavePath"/> by deserializing a file at the <see cref="ArtworkPreferences"/> if it
         /// exists, or a new instance if deserialization fails.
         /// </summary>
-        public static CardCatalog CreateFromFile()
+        public static CardCatalog? CreateFromFile()
         {
-            try
-            {
-                var deserializedFromFile = JsonSerializer.Deserialize<CardCatalog>(File.ReadAllText(SavePath));
-                return deserializedFromFile ?? new CardCatalog(new BulkData(), [], null);
-            }
-            catch (Exception)
-            {
-                return new CardCatalog(new BulkData(), [], null);
-            }
+            return JsonSerializer.Deserialize<CardCatalog>(File.ReadAllText(SavePath));
         }
 
         #endregion Constructors

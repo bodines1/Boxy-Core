@@ -1,4 +1,5 @@
 ﻿using Boxy_Core.Mvvm;
+using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using System.Text;
 using System.Windows;
@@ -12,7 +13,9 @@ namespace Boxy_Core
     {
         public App()
         {
+            // Initialize static resources
             DispatcherHelper.Initialize();
+            DefaultSettings.Initialize();
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
         }
 

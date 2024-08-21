@@ -8,6 +8,7 @@ using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using Boxy_Core.ViewModels.Dialogs;
 using PdfSharp.Pdf;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -28,13 +29,11 @@ namespace Boxy_Core.ViewModels
         /// <param name="reporter">Reports status and progress events to subscribers.</param>
         /// <param name="cardCatalog">Holds a queryable set of all oracle cards (no duplicate printings) to prevent excess queries to ScryfallAPI.</param>
         /// <param name="artworkPreferences">Holds a mapping of Oracle Ids to Card Ids to store and retrieve a user's preferred printing of a card.</param>
-        public MainViewModel(IDialogService dialogService, IReporter reporter, CardCatalog cardCatalog, ArtworkPreferences artworkPreferences)
+        public MainViewModel(IDialogService dialogService, IReporter reporter)
         {
             DialogService = dialogService;
             Reporter = reporter;
-            OracleCatalog = cardCatalog;
-            ArtPreferences = artworkPreferences;
-            ZoomPercent = Settings.Default.ZoomPercent;
+            ZoomPercent = DefaultSettings.UserSettings.ZoomPercent;
             DecklistText = string.Empty;
             
             DisplayedCards = new ObservableCollection<CardViewModel>();
@@ -44,8 +43,10 @@ namespace Boxy_Core.ViewModels
 
             if (ApplicationDeployment.IsNetworkDeployed)
             {
-                Version version = ApplicationDeployment.CurrentDeployment.CurrentVersion;
-                SoftwareVersion = $"{version.Major}.{version.Minor}.{version.Build}";
+                Version? version = ApplicationDeployment.CurrentDeployment?.CurrentVersion;
+                SoftwareVersion = version is null
+                    ? $"Unknown Version"
+                    : $"{version.Major}.{version.Minor}.{version.Build}";
             }
             else
             {
@@ -63,11 +64,8 @@ namespace Boxy_Core.ViewModels
         private string _decklistText;
         private CardMimicStatusEventArgs _lastStatus;
         private CardMimicProgressEventArgs _lastProgress;
-        private CardCatalog _oracleCatalog;
         private int _zoomPercent;
         private int _totalCards;
-        private double _totalPrice;
-        private bool _isFormatLegal;
 
         #endregion Fields
 
@@ -77,11 +75,6 @@ namespace Boxy_Core.ViewModels
         /// Service for resolving and showing dialog windows from viewmodels.
         /// </summary>
         private IDialogService DialogService { get; }
-
-        /// <summary>
-        /// Holds a mapping of Oracle Ids to Card Ids to store and retrieve a user's preferred printing of a card.
-        /// </summary>
-        private ArtworkPreferences ArtPreferences { get; }
 
         /// <summary>
         /// Reports status and progress events to subscribers.
@@ -107,23 +100,6 @@ namespace Boxy_Core.ViewModels
         /// A collection of all PDF files user has created since the app started.
         /// </summary>
         public ObservableCollection<string> SavedPdfFilePaths { get; }
-
-        /// <summary>
-        /// Card catalog contains all possible oracle cards locally to avoid querying Scryfall.
-        /// </summary>
-        public CardCatalog OracleCatalog
-        {
-            get
-            {
-                return _oracleCatalog;
-            }
-
-            private set
-            {
-                _oracleCatalog = value;
-                OnPropertyChanged();
-            }
-        }
 
         /// <summary>
         /// Last status args received from the <see cref="Reporter"/>.
@@ -195,27 +171,8 @@ namespace Boxy_Core.ViewModels
                     card.ScaleToPercent(_zoomPercent);
                 }
 
-                Settings.Default.ZoomPercent = _zoomPercent;
-                Settings.Default.Save();
+                DefaultSettings.UserSettings.ZoomPercent = _zoomPercent;
                 OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Total price of all the cards generated to be displayed in <see cref="DisplayedCards"/>.
-        /// </summary>
-        public double TotalPrice
-        {
-            get
-            {
-                return _totalPrice;
-            }
-
-            private set
-            {
-                _totalPrice = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsPriceTooHigh));
             }
         }
 
@@ -232,46 +189,6 @@ namespace Boxy_Core.ViewModels
             private set
             {
                 _totalCards = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether the price has exceeded the (arbitrary) limit specified by the user/software.
-        /// </summary>
-        public bool IsPriceTooHigh
-        {
-            get
-            {
-                return TotalPrice > Settings.Default.MaxPrice;
-            }
-        }
-
-        /// <summary>
-        /// Text/string of the user selected format.
-        /// </summary>
-        public string FormatDisplay
-        {
-            get
-            {
-                return Settings.Default.SavedFormat.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether the set of cards generated is legal in the format specified by the user/software.
-        /// </summary>
-        public bool IsFormatLegal
-        {
-            get
-            {
-                return _isFormatLegal;
-            }
-
-            set
-            {
-                _isFormatLegal = value;
-                OnPropertyChanged(nameof(FormatDisplay));
                 OnPropertyChanged();
             }
         }
@@ -298,7 +215,7 @@ namespace Boxy_Core.ViewModels
         private async Task SearchSubmit_ExecuteAsync()
         {
             DisplayErrors.Clear();
-            TimeSpan? timeSinceUpdate = DateTime.Now - OracleCatalog.UpdateTime;
+            TimeSpan? timeSinceUpdate = DateTime.Now - DefaultSettings.CardCatalog.UpdateTime;
 
             if (timeSinceUpdate == null)
             {
@@ -336,7 +253,7 @@ namespace Boxy_Core.ViewModels
 
             for (var i = 0; i < lines.Count; i++)
             {
-                List<Card> cards = OracleCatalog.FindExactCard(lines[i].SearchTerm);
+                List<Card> cards = DefaultSettings.CardCatalog.FindExactCard(lines[i].SearchTerm);
 
                 if (!cards.Any())
                 {
@@ -361,14 +278,14 @@ namespace Boxy_Core.ViewModels
                         continue;
                     }
 
-                    preferredCard = ArtPreferences.GetPreferredCard(cardChooser.ChosenCard);
+                    preferredCard = DefaultSettings.ArtworkPreferences.GetPreferredCard(cardChooser.ChosenCard);
                 }
                 else
                 {
-                    preferredCard = ArtPreferences.GetPreferredCard(cards.Single());
+                    preferredCard = DefaultSettings.ArtworkPreferences.GetPreferredCard(cards.Single());
                 }
 
-                var cardVm = new CardViewModel(Reporter, ArtPreferences, preferredCard, lines[i].Quantity, ZoomPercent);
+                var cardVm = new CardViewModel(Reporter, DefaultSettings.ArtworkPreferences, preferredCard, lines[i].Quantity, ZoomPercent);
                 DisplayedCards.Add(cardVm);
                 await Task.Delay(1);
                 Reporter.Progress(i, 0, lines.Count - 1);
@@ -402,10 +319,10 @@ namespace Boxy_Core.ViewModels
             }
 
             Reporter.StartBusy(LovecraftianPhraseGenerator.RandomPhrase());
-            var pdfBuilder = new CardPdfBuilder(Settings.Default.PdfPageSize, Settings.Default.PdfScalingPercent, Settings.Default.PdfHasCutLines, Settings.Default.CutLineSize, Settings.Default.CutLineColor);
+            var pdfBuilder = new CardPdfBuilder(DefaultSettings.UserSettings.PdfPageSize, DefaultSettings.UserSettings.PdfScalingPercent, DefaultSettings.UserSettings.PdfHasCutLines, DefaultSettings.UserSettings.CutLineSize, DefaultSettings.UserSettings.CutLineColor);
             PdfDocument pdfDoc;
 
-            if (Settings.Default.PrintTwoSided)
+            if (DefaultSettings.UserSettings.PrintTwoSided)
             {
                 pdfDoc = await pdfBuilder.BuildPdfTwoSided(DisplayedCards.ToList(), Reporter);
             }
@@ -414,7 +331,7 @@ namespace Boxy_Core.ViewModels
                 pdfDoc = await pdfBuilder.BuildPdfSingleSided(DisplayedCards.ToList(), Reporter);
             }
 
-            string directory = Environment.ExpandEnvironmentVariables(Settings.Default.PdfSaveFolder);
+            string directory = Environment.ExpandEnvironmentVariables(DefaultSettings.UserSettings.PdfSaveFolder);
             const string fileName = "CardProxies";
             const string ext = ".pdf";
             string fullPath = Path.Combine(directory, fileName + ext);
@@ -454,7 +371,7 @@ namespace Boxy_Core.ViewModels
             Reporter.Report(LovecraftianPhraseGenerator.RandomPhrase());
             SavedPdfFilePaths.Add(fullPath);
 
-            if (!Settings.Default.PdfOpenWhenSaveDone)
+            if (!DefaultSettings.UserSettings.PdfOpenWhenSaveDone)
             {
                 return;
             }
@@ -515,7 +432,7 @@ namespace Boxy_Core.ViewModels
                 return;
             }
 
-            OracleCatalog = catalog;
+            DefaultSettings.CardCatalog = catalog;
             Reporter.Report("Catalog updated.");
             Reporter.StopBusy();
         }
@@ -545,20 +462,6 @@ namespace Boxy_Core.ViewModels
             {
                 return;
             }
-
-            Settings.Default.PdfPageSize = settingsVm.PdfPageSize;
-            Settings.Default.PdfSaveFolder = settingsVm.PdfSaveFolder;
-            Settings.Default.PrintTwoSided = settingsVm.PrintTwoSided;
-            Settings.Default.PdfHasCutLines = settingsVm.PdfHasCutLines;
-            Settings.Default.CutLineColor = settingsVm.CutLineColor;
-            Settings.Default.CutLineSize = settingsVm.CutLineSize;
-            Settings.Default.PdfScalingPercent = settingsVm.PdfScalingPercent;
-            Settings.Default.PdfOpenWhenSaveDone = settingsVm.PdfOpenWhenSaveDone;
-            Settings.Default.MaxPrice = settingsVm.MaxPrice;
-            Settings.Default.SavedFormat = settingsVm.SelectedFormat;
-            Settings.Default.Save();
-
-            TotalPrice = TotalPrice;
         }
 
         #endregion OpenSettings
@@ -601,55 +504,20 @@ namespace Boxy_Core.ViewModels
 
         private void OnDisplayedCardsOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
         {
-            if (args.NewItems != null && args.NewItems.Count > 0)
+            if (sender is not IEnumerable<CardViewModel> list)
             {
-                foreach (object item in args.NewItems)
-                {
-                    if (item is not CardViewModel cvm)
-                    {
-                        continue;
-                    }
-
-                    cvm.PropertyChanged += PriceWatcher;
-                }
-            }
-
-            if (args.OldItems != null && args.OldItems.Count > 0)
-            {
-                foreach (object item in args.OldItems)
-                {
-                    if (item is not CardViewModel cvm)
-                    {
-                        continue;
-                    }
-
-                    cvm.PropertyChanged -= PriceWatcher;
-                }
-            }
-
-            if (!DisplayedCards.Any())
-            {
-                TotalCards = 0;
-                TotalPrice = 0;
-                IsFormatLegal = true;
                 return;
             }
 
-            TotalCards = DisplayedCards.Select(cvm => cvm.Quantity).Sum();
-            IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
-        }
+            var countable = list.ToList();
 
-        private void PriceWatcher(object? sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
+            if (countable.Count == 0)
             {
-                case nameof(CardViewModel.LowestPrice):
-                    TotalPrice = DisplayedCards.Select(cvm => cvm.TotalPrice).Sum();
-                    break;
-                case nameof(CardViewModel.IsLegal):
-                    IsFormatLegal = DisplayedCards.Select(cvm => cvm.IsLegal).All(boolVal => boolVal);
-                    break;
+                TotalCards = 0;
+                return;
             }
+
+            TotalCards = countable.Select(cvm => cvm.Quantity).Sum();
         }
 
         private void BuildingCardsErrors(object? sender, CardMimicStatusEventArgs e)
@@ -678,7 +546,6 @@ namespace Boxy_Core.ViewModels
         /// <inheritdoc />
         public override void Cleanup()
         {
-            ArtPreferences.SaveToFile();
             base.Cleanup();
         }
 
