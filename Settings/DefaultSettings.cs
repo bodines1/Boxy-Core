@@ -110,6 +110,6 @@ namespace Boxy_Core.Settings
 
         public static CardCatalog CardCatalog { get; set; } = new CardCatalog(new BulkData(), [], null);
 
-        public static UserSettings UserSettings { get; private set; } = new UserSettings();
+        public static UserSettings UserSettings { get; set; } = new UserSettings();
     }
 }
