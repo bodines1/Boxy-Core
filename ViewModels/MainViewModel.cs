@@ -497,7 +497,13 @@ namespace Boxy_Core.ViewModels
 
             try
             {
-                Process.Start(paramAsString);
+                var directory = Path.GetDirectoryName(paramAsString);
+                var psi = new ProcessStartInfo()
+                {
+                    FileName = paramAsString,
+                    WorkingDirectory = directory
+                };
+                Process.Start(psi);
             }
             catch (Exception exc)
             {
