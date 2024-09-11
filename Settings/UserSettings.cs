@@ -29,7 +29,7 @@ namespace Boxy_Core.Settings
             MainWindowHeight = 480;
             MainWindowState = WindowState.Normal;
             ZoomPercent = 100;
-            PdfSaveFolder = "%USERPROFILE%/Downloads";
+            PdfSaveFolder = "%USERPROFILE%\\Downloads";
             PdfHasCutLines = true;
             PdfScalingPercent = 100;
             PdfOpenWhenSaveDone = true;
@@ -46,7 +46,14 @@ namespace Boxy_Core.Settings
         /// </summary>
         public static UserSettings? CreateFromFile()
         {
-            return JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(SavePath));
+            var deserialized = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(SavePath));
+            if (deserialized?.PdfSaveFolder.Contains('/') ?? false)
+            {
+                //Small fix for an easy to make mistake.
+                deserialized.PdfSaveFolder = deserialized.PdfSaveFolder.Replace('/', '\\');
+            }
+
+            return deserialized;
         }
 
         #endregion Constructors
