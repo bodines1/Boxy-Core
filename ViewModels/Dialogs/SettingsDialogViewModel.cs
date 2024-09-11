@@ -32,6 +32,8 @@ namespace Boxy_Core.ViewModels.Dialogs
 
         private void UserSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            var temp = new CardPdfBuilder(UserSettings.PdfPageSize, UserSettings.PdfScalingPercent, UserSettings.PdfHasCutLines, UserSettings.CutLineSize, UserSettings.CutLineColor);
+            CardsPerPage = temp.ExampleImageDrawer.ImagesPerPage;
         }
 
         #endregion Constructors
