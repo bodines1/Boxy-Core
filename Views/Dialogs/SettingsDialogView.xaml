@@ -63,7 +63,7 @@
                     Content="PDF Save Path" />
                 <TextBox
                     VerticalContentAlignment="Center"
-                    Text="{Binding DefaultSettings.UserSettings.PdfSaveFolder}" />
+                    Text="{Binding UserSettings.PdfSaveFolder}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -76,7 +76,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding PageSizeOptions}"
-                    SelectedItem="{Binding DefaultSettings.UserSettings.PdfPageSize}" />
+                    SelectedItem="{Binding UserSettings.PdfPageSize}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -102,7 +102,7 @@
                         Maximum="110"
                         Minimum="90"
                         TickFrequency="1"
-                        Value="{Binding DefaultSettings.UserSettings.PdfScalingPercent}" />
+                        Value="{Binding UserSettings.PdfScalingPercent}" />
                 </DockPanel>
             </UniformGrid>
             <UniformGrid
@@ -115,7 +115,7 @@
                     Content="Print 2-Sided" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding DefaultSettings.UserSettings.PrintTwoSided}" />
+                    IsChecked="{Binding UserSettings.PrintTwoSided}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
@@ -127,13 +127,13 @@
                     Content="Cut Lines Between Cards" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding DefaultSettings.UserSettings.PdfHasCutLines}" />
+                    IsChecked="{Binding UserSettings.PdfHasCutLines}" />
             </UniformGrid>
             <UniformGrid
                 Margin="1"
                 Rows="1"
                 ToolTip="Color of the cut lines"
-                Visibility="{Binding DefaultSettings.UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
+                Visibility="{Binding UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
                 <Label
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
@@ -141,7 +141,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding ColorOptions}"
-                    SelectedItem="{Binding DefaultSettings.UserSettings.CutLineColor}">
+                    SelectedItem="{Binding UserSettings.CutLineColor}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate
                             DataType="{x:Type drawing:XKnownColor}">
@@ -167,7 +167,7 @@
                 Margin="1"
                 Rows="1"
                 ToolTip="Size of the cut lines"
-                Visibility="{Binding DefaultSettings.UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
+                Visibility="{Binding UserSettings.PdfHasCutLines, Converter={x:Static util:Converters.FalseToCollapsed}}">
                 <Label
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
@@ -175,7 +175,7 @@
                 <ComboBox
                     VerticalContentAlignment="Center"
                     ItemsSource="{Binding LineSizeOptions}"
-                    SelectedItem="{Binding DefaultSettings.UserSettings.CutLineSize}">
+                    SelectedItem="{Binding UserSettings.CutLineSize}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate
                             DataType="{x:Type utilities:CutLineSizes}">
@@ -207,7 +207,7 @@
                     Content="Open PDF after download" />
                 <CheckBox
                     VerticalContentAlignment="Center"
-                    IsChecked="{Binding DefaultSettings.UserSettings.PdfOpenWhenSaveDone}" />
+                    IsChecked="{Binding UserSettings.PdfOpenWhenSaveDone}" />
             </UniformGrid>
             <StackPanel
                 HorizontalAlignment="Center"

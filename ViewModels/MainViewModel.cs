@@ -466,12 +466,32 @@ namespace Boxy_Core.ViewModels
 
         private void OpenSettings_ExecuteAsync()
         {
-            var settingsVm = new SettingsDialogViewModel();
+            var copiedSettings = new UserSettings()
+            {
+                Column0Width = DefaultSettings.UserSettings.Column0Width,
+                CutLineColor = DefaultSettings.UserSettings.CutLineColor,
+                CutLineSize = DefaultSettings.UserSettings.CutLineSize,
+                MainWindowHeight = DefaultSettings.UserSettings.MainWindowHeight,
+                MainWindowLeft = DefaultSettings.UserSettings.MainWindowLeft,
+                MainWindowState = DefaultSettings.UserSettings.MainWindowState,
+                MainWindowTop = DefaultSettings.UserSettings.MainWindowTop,
+                MainWindowWidth = DefaultSettings.UserSettings.MainWindowWidth,
+                PdfHasCutLines = DefaultSettings.UserSettings.PdfHasCutLines,
+                PdfOpenWhenSaveDone = DefaultSettings.UserSettings.PdfOpenWhenSaveDone,
+                PdfPageSize = DefaultSettings.UserSettings.PdfPageSize,
+                PdfSaveFolder = DefaultSettings.UserSettings.PdfSaveFolder,
+                PdfScalingPercent = DefaultSettings.UserSettings.PdfScalingPercent,
+                PrintTwoSided = DefaultSettings.UserSettings.PrintTwoSided,
+                ZoomPercent = DefaultSettings.UserSettings.ZoomPercent
+            };
+            var settingsVm = new SettingsDialogViewModel(copiedSettings);
 
             if (!(DialogService.ShowDialog(settingsVm) ?? false))
             {
                 return;
             }
+
+            DefaultSettings.UserSettings = copiedSettings;
         }
 
         #endregion OpenSettings
