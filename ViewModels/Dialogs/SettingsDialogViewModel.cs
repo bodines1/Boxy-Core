@@ -17,20 +17,21 @@ namespace Boxy_Core.ViewModels.Dialogs
         /// <summary>
         /// Creates a new instance of <see cref="SettingsDialogViewModel"/>.
         /// </summary>
-        public SettingsDialogViewModel()
+        public SettingsDialogViewModel(UserSettings userSettings)
         {
+            UserSettings = userSettings;
+            var temp = new CardPdfBuilder(userSettings.PdfPageSize, userSettings.PdfScalingPercent, userSettings.PdfHasCutLines, userSettings.CutLineSize, userSettings.CutLineColor);
+            CardsPerPage = temp.ExampleImageDrawer.ImagesPerPage;
+            UserSettings.PropertyChanged += UserSettings_PropertyChanged;
             FormatOptions = Enum.GetValues(typeof(FormatTypes)).Cast<FormatTypes>().ToList();
             PageSizeOptions = Enum.GetValues(typeof(PageSize)).Cast<PageSize>().ToList();
             PageSizeOptions.Remove(PageSize.Undefined);
             ColorOptions = Enum.GetValues(typeof(XKnownColor)).Cast<XKnownColor>().ToList();
             LineSizeOptions = Enum.GetValues(typeof(CutLineSizes)).Cast<CutLineSizes>().ToList();
-            DefaultSettings.UserSettings.PropertyChanged += UserSettings_PropertyChanged;
         }
 
         private void UserSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            var temp = new CardPdfBuilder(DefaultSettings.UserSettings.PdfPageSize, DefaultSettings.UserSettings.PdfScalingPercent, DefaultSettings.UserSettings.PdfHasCutLines, DefaultSettings.UserSettings.CutLineSize, DefaultSettings.UserSettings.CutLineColor);
-            CardsPerPage = temp.ExampleImageDrawer.ImagesPerPage;
         }
 
         #endregion Constructors
@@ -42,6 +43,11 @@ namespace Boxy_Core.ViewModels.Dialogs
         #endregion Fields
 
         #region Properties
+
+        /// <summary>
+        /// Bindable object for editing user settings.
+        /// </summary>
+        public UserSettings UserSettings { get; set; }
 
         /// <summary>
         /// List to populate the options for user to select from.
