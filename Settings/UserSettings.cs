@@ -1,5 +1,4 @@
-﻿using Boxy_Core.Model.ScryfallData;
-using Boxy_Core.Mvvm;
+﻿using Boxy_Core.Mvvm;
 using Boxy_Core.Utilities;
 using PdfSharp;
 using PdfSharp.Drawing;

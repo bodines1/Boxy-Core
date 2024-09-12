@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace Boxy_Core.ViewModels
@@ -379,15 +380,7 @@ namespace Boxy_Core.ViewModels
                 return;
             }
 
-            try
-            {
-                Process.Start(fullPath);
-            }
-            catch (Exception e)
-            {
-                Reporter.Report(e.Message, true);
-                DisplayError(e, "Could not open PDF. Do you have a PDF viewer installed?");
-            }
+            OpenSinglePdf_ExecuteAsync(fullPath);
         }
 
         #endregion BuildPdf
