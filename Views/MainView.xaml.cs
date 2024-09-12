@@ -27,8 +27,8 @@ namespace Boxy_Core.Views
             Width = DefaultSettings.UserSettings.MainWindowWidth;
             Height = DefaultSettings.UserSettings.MainWindowHeight;
             WindowState = DefaultSettings.UserSettings.MainWindowState;
-            WindowFixer.SizeToFit(this);
             WindowFixer.MoveIntoView(this);
+            WindowFixer.SizeToFit(this);
 
             switch (DefaultSettings.UserSettings.Column0Width)
             {
@@ -67,7 +67,7 @@ namespace Boxy_Core.Views
         {
             e.Handled = false;
 
-            if (!(sender is Button))
+            if (sender is not Button)
             {
                 return;
             }
@@ -77,7 +77,7 @@ namespace Boxy_Core.Views
             while (e.LeftButton == MouseButtonState.Pressed)
             {
                 await Task.Delay(50);
-                var scryfallService = ((MainViewModel)DataContext).ScryfallService;
+                ScryfallService scryfallService = ((MainViewModel)DataContext).ScryfallService;
                 Card? card = await scryfallService.GetRandomCard(((MainViewModel)DataContext).Reporter);
 
                 if (card is null)
