@@ -516,6 +516,7 @@ namespace Boxy_Core.ViewModels
                     FileName = paramAsString,
                     UseShellExecute = true
                 };
+
                 Process.Start(psi);
 
             }
