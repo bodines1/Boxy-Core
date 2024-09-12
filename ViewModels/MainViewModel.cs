@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Text;
+using PdfSharp.Pdf.IO;
 
 namespace Boxy_Core.ViewModels
 {
@@ -510,13 +511,13 @@ namespace Boxy_Core.ViewModels
 
             try
             {
-                var directory = Path.GetDirectoryName(paramAsString);
-                var psi = new ProcessStartInfo()
+                var psi = new ProcessStartInfo
                 {
                     FileName = paramAsString,
-                    WorkingDirectory = directory
+                    UseShellExecute = true
                 };
                 Process.Start(psi);
+
             }
             catch (Exception exc)
             {
