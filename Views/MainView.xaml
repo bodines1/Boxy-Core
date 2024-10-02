@@ -317,22 +317,6 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <DockPanel
-                        Margin="0,0,0,2"
-                        DockPanel.Dock="Top">
-                        <Button
-                            Margin="2,0,0,0"
-                            mah:ControlsHelper.CornerRadius="1"
-                            BorderBrush="{StaticResource BackgroundXDark}"
-                            Command="{Binding ImportDeck}"
-                            Content="Import From URL"
-                            DockPanel.Dock="Right"
-                            FontSize="12" />
-                        <TextBox
-                            VerticalContentAlignment="Center"
-                            BorderBrush="{StaticResource BackgroundXDark}"
-                            Text="{Binding ImportDeckUri}" />
-                    </DockPanel>
                     <Grid>
                         <TextBox
                             x:Name="DecklistTextBox"
