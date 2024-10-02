@@ -7,6 +7,8 @@
     xmlns:resources="clr-namespace:Boxy_Core.Views.Resources"
     xmlns:viewModels="clr-namespace:Boxy_Core.ViewModels"
     d:DataContext="{d:DesignInstance Type=viewModels:CardViewModel}"
+    d:Height="200"
+    d:Width="130"
     FontFamily="pack://application:,,,/Boxy;component/Fonts/#Lato"
     mc:Ignorable="d">
     <UserControl.Resources>
@@ -226,6 +228,8 @@
                         </Style>
                     </Grid.Style>
                     <Border
+                        d:Height="190"
+                        d:Width="120"
                         Background="Black"
                         Opacity="0.8" />
                     <TextBlock
