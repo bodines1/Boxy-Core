@@ -45,9 +45,6 @@ namespace Boxy_Core.ViewModels
         private double _imageWidth;
         private double _imageHeight;
         private bool _isPopulatingPrints;
-        private double _lowestPrice;
-        private double _totalPrice;
-        private bool _isLegal;
         private bool _isLoadingImage;
 
         #endregion Fields
@@ -174,7 +171,6 @@ namespace Boxy_Core.ViewModels
                     _quantity = value;
                 }
 
-                TotalPrice = LowestPrice * _quantity;
                 OnPropertyChanged();
             }
         }
@@ -231,41 +227,6 @@ namespace Boxy_Core.ViewModels
         }
 
         /// <summary>
-        /// Lowest price found from all the available printings.
-        /// </summary>
-        public double LowestPrice
-        {
-            get
-            {
-                return _lowestPrice;
-            }
-
-            set
-            {
-                _lowestPrice = Math.Round(value, 2);
-                TotalPrice = _lowestPrice * Quantity;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Total price, LowestPrice * Quantity.
-        /// </summary>
-        public double TotalPrice
-        {
-            get
-            {
-                return _totalPrice;
-            }
-
-            set
-            {
-                _totalPrice = Math.Round(value, 2);
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
         /// Indicates when a background task is busy loading an image from the services.
         /// </summary>
         public bool IsLoadingImage
@@ -296,7 +257,10 @@ namespace Boxy_Core.ViewModels
             }
 
             IsLoadingImage = true;
-            await DispatcherHelper.UiDispatcher.InvokeAsync(UpdateCardImage);
+            await DispatcherHelper.UiDispatcher.InvokeAsync(async () =>
+            {
+                await UpdateCardImage();
+            });
             IsLoadingImage = false;
         }
 
@@ -307,7 +271,7 @@ namespace Boxy_Core.ViewModels
         {
             IsPopulatingPrints = true;
 
-            List<Card> prints = await ScryfallService.GetAllPrintingsAsync(card, Reporter);
+            List<Card> prints = await ScryfallService.GetAllPrintingsAsync(card, Reporter) ?? [];
 
             var prices = new List<double>();
             foreach (Card print in prints)
@@ -317,8 +281,6 @@ namespace Boxy_Core.ViewModels
                     prices.Add(valAsDouble);
                 }
             }
-
-            LowestPrice = prices.Any() ? prices.Min() : 0;
 
             var indexCounter = 0;
 

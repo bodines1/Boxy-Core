@@ -196,13 +196,22 @@
             <Grid
                 Grid.Column="0"
                 Grid.ColumnSpan="2"
-                IsHitTestVisible="False"
-                Visibility="{Binding IsLoadingImage, Converter={x:Static resources:Converters.FalseToCollapsed}}">
+                IsHitTestVisible="False">
                 <Grid>
                     <Grid.Style>
                         <Style
                             TargetType="{x:Type Grid}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoadingImage}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsPopulatingPrints}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding FrontImage}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
                                 <Trigger Property="Visibility" Value="Visible">
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>

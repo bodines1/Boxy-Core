@@ -21,13 +21,13 @@ namespace Boxy_Core.Settings
                 }
                 else
                 {
-                    ArtworkPreferences = new ArtworkPreferences();
+                    ArtworkPreferences = [];
                 }
             }
             catch (Exception e)
             {
                 reporter?.Report($"Error getting art preferences from file. A new file was created instead, but stored preferences may have been lost.\r\n\r\nException: {e.Message}", true);
-                ArtworkPreferences = new ArtworkPreferences();
+                ArtworkPreferences = [];
             }
 
             try

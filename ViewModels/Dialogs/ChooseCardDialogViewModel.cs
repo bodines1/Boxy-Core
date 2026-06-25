@@ -28,7 +28,7 @@ namespace Boxy_Core.ViewModels.Dialogs
         /// </summary>
         public ChooseCardDialogViewModel(List<Card> cards, IReporter reporter, ScryfallService scryfallService)
         {
-            if (cards == null || !cards.Any())
+            if (cards == null || cards.Count == 0)
             {
                 throw new ArgumentNullException(nameof(cards), @"Must pass valid cards in to use this view model.");
             }

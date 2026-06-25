@@ -11,9 +11,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Text;
-using PdfSharp.Pdf.IO;
 
 namespace Boxy_Core.ViewModels
 {
@@ -32,8 +30,8 @@ namespace Boxy_Core.ViewModels
             DialogService = dialogService;
             Reporter = reporter;
             ScryfallService = scryfallService;
-            ZoomPercent = DefaultSettings.UserSettings.ZoomPercent;
-            DecklistText = string.Empty;
+            _zoomPercent = DefaultSettings.UserSettings.ZoomPercent;
+            _decklistText = string.Empty;
             
             DisplayedCards.CollectionChanged += OnDisplayedCardsOnCollectionChanged;
 
@@ -58,8 +56,8 @@ namespace Boxy_Core.ViewModels
         #region Fields
 
         private string _decklistText;
-        private CardMimicStatusEventArgs _lastStatus;
-        private CardMimicProgressEventArgs _lastProgress;
+        private CardMimicStatusEventArgs? _lastStatus;
+        private CardMimicProgressEventArgs? _lastProgress;
         private int _zoomPercent;
         private int _totalCards;
 
@@ -105,7 +103,7 @@ namespace Boxy_Core.ViewModels
         /// <summary>
         /// Last status args received from the <see cref="Reporter"/>.
         /// </summary>
-        public CardMimicStatusEventArgs LastStatus
+        public CardMimicStatusEventArgs? LastStatus
         {
             get
             {
@@ -122,7 +120,7 @@ namespace Boxy_Core.ViewModels
         /// <summary>
         /// Last progress args received from the <see cref="Reporter"/>.
         /// </summary>
-        public CardMimicProgressEventArgs LastProgress
+        public CardMimicProgressEventArgs? LastProgress
         {
             get
             {
@@ -246,11 +244,10 @@ namespace Boxy_Core.ViewModels
             Reporter.StartProgress();
             Reporter.StatusReported += BuildingCardsErrors;
 
-            List<SearchLine> lines = DecklistText
+            List<SearchLine> lines = [.. DecklistText
                 .Split(["\r", "\n"], StringSplitOptions.RemoveEmptyEntries)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(l => new SearchLine(l))
-                .ToList();
+                .Select(l => new SearchLine(l))];
 
             for (var i = 0; i < lines.Count; i++)
             {
@@ -329,11 +326,11 @@ namespace Boxy_Core.ViewModels
 
             if (DefaultSettings.UserSettings.PrintTwoSided)
             {
-                pdfDoc = await pdfBuilder.BuildPdfTwoSided(DisplayedCards.ToList(), Reporter);
+                pdfDoc = await pdfBuilder.BuildPdfTwoSided([.. DisplayedCards], Reporter);
             }
             else
             {
-                pdfDoc = await pdfBuilder.BuildPdfSingleSided(DisplayedCards.ToList(), Reporter);
+                pdfDoc = await pdfBuilder.BuildPdfSingleSided([.. DisplayedCards], Reporter);
             }
 
             string directory = Environment.ExpandEnvironmentVariables(DefaultSettings.UserSettings.PdfSaveFolder);
@@ -411,7 +408,7 @@ namespace Boxy_Core.ViewModels
                 return;
             }
 
-            BulkData oracleBulkData = bulkDataList.Data.Single(bd => bd.Name.Contains("Oracle"));
+            BulkData oracleBulkData = bulkDataList.Data.Single(bd => bd.Type.Equals("oracle_cards"));
 
             List<Card>? cards = await ScryfallService.GetBulkCards(oracleBulkData.PermalinkUri, Reporter);
 

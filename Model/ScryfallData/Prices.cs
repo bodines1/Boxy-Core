@@ -4,13 +4,8 @@ namespace Boxy_Core.Model.ScryfallData
 {
     public class Prices
     {
+        [JsonRequired]
         [JsonPropertyName("usd")]
-        public string Usd { get; set; }
-        
-        [JsonPropertyName("eur")]
-        public string Eur { get; set; }
-        
-        [JsonPropertyName("tix")]
-        public string Tix { get; set; }
+        public required string Usd { get; set; }
     }
 }

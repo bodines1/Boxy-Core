@@ -4,16 +4,15 @@ namespace Boxy_Core.Model.ScryfallData
 {
     public class ScryfallList<T>
     {
-        [JsonPropertyName("total_cards")]
-        public long TotalCards { get; set; }
-
+        [JsonRequired]
         [JsonPropertyName("has_more")]
         public bool HasMore { get; set; }
 
         [JsonPropertyName("next_page")]
-        public string NextPage { get; set; }
+        public required string? NextPage { get; set; }
 
+        [JsonRequired]
         [JsonPropertyName("data")]
-        public T[] Data { get; set; }
+        public required T[] Data { get; set; }
     }
 }
