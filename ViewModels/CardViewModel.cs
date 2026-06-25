@@ -273,15 +273,6 @@ namespace Boxy_Core.ViewModels
 
             List<Card> prints = await ScryfallService.GetAllPrintingsAsync(card, Reporter) ?? [];
 
-            var prices = new List<double>();
-            foreach (Card print in prints)
-            {
-                if (double.TryParse(print.Prices?.Usd, out double valAsDouble))
-                {
-                    prices.Add(valAsDouble);
-                }
-            }
-
             var indexCounter = 0;
 
             foreach (Card print in prints)

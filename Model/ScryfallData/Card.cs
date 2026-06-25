@@ -4,45 +4,38 @@ namespace Boxy_Core.Model.ScryfallData
 {
     public class Card
     {
-        [JsonRequired]
         [JsonPropertyName("id")]
-        public required string Id { get; set; }
+        public string Id { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("oracle_id")]
-        public required string OracleId { get; set; }
+        public string OracleId { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("name")]
-        public required string Name { get; set; }
+        public string Name { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("layout")]
-        public required string Layout { get; set; }
+        public string Layout { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("image_uris")]
-        public required ImageUris ImageUris { get; set; }
+        public ImageUris ImageUris { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("card_faces")]
-        public required List<CardFace> CardFaces { get; set; }
+        public List<CardFace> CardFaces { get; set; }
 
-        [JsonRequired]
+        [JsonPropertyName("set")]
+        public string Set { get; set; }
+
+        [JsonPropertyName("set_name")]
+        public string SetName { get; set; }
+
         [JsonPropertyName("prints_search_uri")]
-        public required string PrintsSearchUri { get; set; }
+        public string PrintsSearchUri { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("collector_number")]
-        public required string CollectorNumber { get; set; }
+        public string CollectorNumber { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("digital")]
         public bool Digital { get; set; }
-
-        [JsonRequired]
-        [JsonPropertyName("prices")]
-        public required Prices Prices { get; set; }
         
         public bool IsDoubleFaced
         {

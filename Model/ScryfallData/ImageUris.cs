@@ -7,12 +7,10 @@ namespace Boxy_Core.Model.ScryfallData
     /// </summary>
     public class ImageUris
     {
-        [JsonRequired]
         [JsonPropertyName("small")]
-        public required string Small { get; set; }
+        public string Small { get; set; }
 
-        [JsonRequired]
         [JsonPropertyName("border_crop")]
-        public required string BorderCrop { get; set; }
+        public string BorderCrop { get; set; }
     }
 }

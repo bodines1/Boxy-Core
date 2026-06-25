@@ -4,8 +4,7 @@ namespace Boxy_Core.Model.ScryfallData
 {
     public class CardFace
     {
-        [JsonRequired]
         [JsonPropertyName("image_uris")]
-        public required ImageUris ImageUris { get; set; }
+        public ImageUris ImageUris { get; set; }
     }
 }
