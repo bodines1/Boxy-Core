@@ -50,8 +50,8 @@ namespace Boxy_Core.Utilities
             // Set some properties other methods will need to use.
             PointsPerInch = page.Width.Point / page.Width.Inch;
             Margin = 0.25 * PointsPerInch;
-            UseableX = page.Width - 2 * Margin;
-            UseableY = page.Height - 2 * Margin;
+            UseableX = page.Width.Point - 2 * Margin;
+            UseableY = page.Height.Point - 2 * Margin;
 
             // MTG cards are 3.48 x 2.49 inches or 63 x 88 mm, then slightly scaled down to fit better in card sleeves.
             CardSize = new XSize(2.49 * PointsPerInch * ScalingPercent / 100 * 0.99, 3.48 * PointsPerInch * ScalingPercent / 100 * 0.99);

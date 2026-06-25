@@ -14,7 +14,7 @@ namespace Boxy_Core.Utilities
         {
             get
             {
-                return _imageCache ??= new Dictionary<string, Bitmap>();
+                return _imageCache ??= [];
             }
         }
 
@@ -37,11 +37,11 @@ namespace Boxy_Core.Utilities
 
             IsCacheBeingAccessed = true;
 
-            if (ImageCache.ContainsKey(imageUri))
+            if (ImageCache.TryGetValue(imageUri, out Bitmap? value))
             {
                 await Task.Delay(1);
                 IsCacheBeingAccessed = false;
-                return ImageCache[imageUri];
+                return value;
             }
 
             Bitmap? bitmap = await scryfallService.GetImageAsync(imageUri, reporter);

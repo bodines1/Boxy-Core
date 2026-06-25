@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 
 namespace Boxy_Core.Model
 {
@@ -15,8 +16,16 @@ namespace Boxy_Core.Model
     {
         public ScryfallService(IDialogService dialogService)
         {
-            _dialogService = dialogService;
+            var limiterOptions = new FixedWindowRateLimiterOptions()
+            {
+                AutoReplenishment = true,
+                PermitLimit = 2,
+                QueueLimit = int.MaxValue,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                Window = TimeSpan.FromMilliseconds(800)
+            };
 
+            _dialogService = dialogService;
             Version? version = null;
 
             if (ApplicationDeployment.IsNetworkDeployed)
@@ -26,13 +35,13 @@ namespace Boxy_Core.Model
 
             version ??= Assembly.GetEntryAssembly()?.GetName().Version ?? Assembly.GetExecutingAssembly().GetName().Version ?? throw new ApplicationException("Could not get application version for Scryfall services.");
 
-            _httpClient = new();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"Boxy/{version}");
+            _httpClient = new(new HttpHandlerWithLimiter(new FixedWindowRateLimiter(limiterOptions)));
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"Boxy-Core/{version}");
             _httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
         }
 
-        private IDialogService _dialogService;
-        private HttpClient _httpClient;
+        private readonly IDialogService _dialogService;
+        private readonly HttpClient _httpClient;
 
         #region Services
 
@@ -74,6 +83,11 @@ namespace Boxy_Core.Model
                 return null;
             }
 
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetFuzzyCardAsync(search, reporter);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
@@ -100,9 +114,12 @@ namespace Boxy_Core.Model
                 throw new ArgumentNullException(nameof(card), "Card object cannot be null. Consumer must check card before using this method.");
             }
 
-            string request = ExactCardSearchWithPrintings + card.OracleId;
+            string request = card.PrintsSearchUri;
             HttpResponseMessage response;
             var result = new List<Card>();
+            StringBuilder errorMessage = new();
+            errorMessage.AppendLine(nameof(GetAllPrintingsAsync));
+            errorMessage.AppendLine(card.Name);
 
             try
             {
@@ -110,13 +127,21 @@ namespace Boxy_Core.Model
             }
             catch (Exception exc)
             {
-                DisplayError($"{request}\r\nAPI Error", exc);
+                errorMessage.AppendLine(request);
+                DisplayError(errorMessage.ToString(), exc);
                 return null;
+            }
+
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetAllPrintingsAsync(card, reporter);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                errorMessage.AppendLine(request);
+                errorMessage.AppendLine($"{(int)response.StatusCode}: {response.ReasonPhrase}");
+                DisplayError(errorMessage.ToString());
                 return null;
             }
 
@@ -125,7 +150,9 @@ namespace Boxy_Core.Model
 
             if (scryfallList is null)
             {
-                DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                errorMessage.AppendLine(request);
+                errorMessage.AppendLine("Result was null/empty.");
+                DisplayError(errorMessage.ToString());
                 return null;
             }
 
@@ -133,7 +160,7 @@ namespace Boxy_Core.Model
 
             while (scryfallList.HasMore)
             {
-                request = scryfallList.NextPage;
+                request = scryfallList.NextPage ?? string.Empty;
 
                 try
                 {
@@ -141,13 +168,15 @@ namespace Boxy_Core.Model
                 }
                 catch (Exception exc)
                 {
-                    DisplayError($"{request}\r\nAPI Error", exc);
+                    errorMessage.AppendLine(request);
+                    DisplayError(errorMessage.ToString(), exc);
                     return null;
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
+                    errorMessage.AppendLine(request);
+                    errorMessage.AppendLine($"{(int)response.StatusCode}: {response.ReasonPhrase}");
                     return null;
                 }
 
@@ -156,7 +185,9 @@ namespace Boxy_Core.Model
 
                 if (scryfallList is null)
                 {
-                    DisplayError($"{request}\r\nAPI Response Error: Result was null/empty.");
+                    errorMessage.AppendLine(request);
+                    errorMessage.AppendLine("Result was null/empty.");
+                    DisplayError(errorMessage.ToString());
                     return null;
                 }
 
@@ -188,6 +219,11 @@ namespace Boxy_Core.Model
                 return null;
             }
 
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetImageAsync(imageUri, reporter);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
@@ -196,12 +232,10 @@ namespace Boxy_Core.Model
 
             try
             {
-                using (Stream stream = await response.Content.ReadAsStreamAsync())
-                {
-                    var bitmap = new Bitmap(stream ?? throw new InvalidOperationException("File stream from service was null, ensure the URI is correct."));
-                    await stream.FlushAsync();
-                    return bitmap;
-                }
+                using Stream stream = await response.Content.ReadAsStreamAsync();
+                var bitmap = new Bitmap(stream ?? throw new InvalidOperationException("File stream from service was null, ensure the URI is correct."));
+                await stream.FlushAsync();
+                return bitmap;
             }
             catch (Exception exc)
             {
@@ -223,6 +257,11 @@ namespace Boxy_Core.Model
             {
                 DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
+            }
+
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetBulkDataInfo(reporter);
             }
 
             if (!response.IsSuccessStatusCode)
@@ -256,6 +295,11 @@ namespace Boxy_Core.Model
             {
                 DisplayError($"{request}\r\nAPI Error", exc);
                 return null;
+            }
+
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetBulkCards(catalogUri, reporter);
             }
 
             if (!response.IsSuccessStatusCode)
@@ -293,6 +337,11 @@ namespace Boxy_Core.Model
                 return null;
             }
 
+            if ((int)response.StatusCode == 429)
+            {
+                return await GetRandomCard(reporter);
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 DisplayError($"{request}\r\nHTTP Error {(int)response.StatusCode}: {response.ReasonPhrase}");
@@ -324,11 +373,6 @@ namespace Boxy_Core.Model
         /// Returns <see cref="Card"/>.
         /// </summary>
         private static Uri BulkData { get; } = new Uri("https://api.scryfall.com/bulk-data");
-        
-        /// <summary>
-        /// Returns <see cref="ScryfallList{T}"/> where data is <see cref="Card"/> objects.
-        /// </summary>
-        private static Uri ExactCardSearchWithPrintings { get; } = new Uri("https://api.scryfall.com/cards/search?order=released&unique=prints&q=digital%3Afalse+oracle_id%3A");
         
         /// <summary>
         /// Returns a random <see cref="Card"/> from Scryfall.

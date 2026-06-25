@@ -1,5 +1,4 @@
-﻿using Boxy_Core.Model.ScryfallData;
-using Boxy_Core.Mvvm;
+﻿using Boxy_Core.Mvvm;
 using Boxy_Core.Settings;
 using Boxy_Core.Utilities;
 using PdfSharp;
@@ -23,7 +22,6 @@ namespace Boxy_Core.ViewModels.Dialogs
             var temp = new CardPdfBuilder(userSettings.PdfPageSize, userSettings.PdfScalingPercent, userSettings.PdfHasCutLines, userSettings.CutLineSize, userSettings.CutLineColor);
             CardsPerPage = temp.ExampleImageDrawer.ImagesPerPage;
             UserSettings.PropertyChanged += UserSettings_PropertyChanged;
-            FormatOptions = Enum.GetValues(typeof(FormatTypes)).Cast<FormatTypes>().ToList();
             PageSizeOptions = Enum.GetValues(typeof(PageSize)).Cast<PageSize>().ToList();
             PageSizeOptions.Remove(PageSize.Undefined);
             ColorOptions = Enum.GetValues(typeof(XKnownColor)).Cast<XKnownColor>().ToList();
@@ -65,11 +63,6 @@ namespace Boxy_Core.ViewModels.Dialogs
         /// List to populate the options for user to select from.
         /// </summary>
         public List<CutLineSizes> LineSizeOptions { get; }
-
-        /// <summary>
-        /// List to populate the options for user to select from.
-        /// </summary>
-        public List<FormatTypes> FormatOptions { get; }
 
         /// <summary>
         /// Way to display to user what the expected cards per page with their settings will be.
